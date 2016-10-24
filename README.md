@@ -5,5 +5,5 @@ You may use it either in development for MQ sender/receiver simulation or in tes
 
 Supported MQ:
 
-RabbitMQ 
-Kafka (planned)
+* RabbitMQ 
+* Kafka (planned)
