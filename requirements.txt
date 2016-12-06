@@ -1,0 +1,4 @@
+django
+simplejson
+configparser
+pika

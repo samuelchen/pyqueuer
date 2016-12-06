@@ -1,0 +1,50 @@
+{% extends 'base.html' %}{% load customer_tags %}
+
+{% block title %}Setting{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <form name="form-setting" action="" method="post">
+            {% csrf_token %}
+            <div class="content">
+            <table>
+                {% for section, options in confs.items %}
+                {% if options|length > 0 %}
+                    <tr><td colspan="3"><h4>{{ section }}</h4></td></tr>
+                    {% for name, value in options.items %}
+                    <tr>
+                    <td style="width:20%;white-space:nowrap"><label for="{{ name }}">{{ name | _2space }}:</label></td>
+                    <td style="width:75%"><input class="ui-widget-content" style="width:95%" id="{{ name }}" name="{{ name }}" type="text"
+                               value="{{ value }}" origin="{{ value }}"></td>
+                    <td><a href="#" onclick="$('#{{ name }}').val('{{ value }}');">[x]</a></td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+                {% endfor %}
+            </table>
+            </div>
+            <div class="content">
+                <hr/>
+                <input type="submit" class="ui-button" name="btn-setting-submit" value="Save"/>
+            </div>
+        </form>
+
+{#        <form name="form-setting-import" action="" method="post">#}
+{#            {% csrf_token %}#}
+{#            <div class="content">#}
+{#                <H3>Import Config</H3>#}
+{#                <table><tr>#}
+{#                    <td style="width:20%"><label for="config_file">config file:</label></td>#}
+{#                    <td style="width:75%"><input type="text" class="ui-widget-content" style="width:95%" name="config_file" placeholder="e.g. ../vpc_resmgt/ca_project/config/config.dev.ini"></td>#}
+{#                    <td><input type="submit" class="ui-widget-content" name="btn-setting-import" value="Import"/></td>#}
+{#                </tr></table>#}
+{#            </div>#}
+{#        </form>#}
+
+    </div>
+{% endblock %}
+
+{% block script %}
+
+{% endblock %}

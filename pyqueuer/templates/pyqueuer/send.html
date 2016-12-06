@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Send{% endblock %}
+
+{% block content %}
+
+    <form name="form-send" action="" method="post">
+        {% csrf_token %}
+
+        <!-- sidebar for selecting or entering message -->
+        <div id="tabs-msg" class="container content sidebar-left">
+            <h4>Select or Enter Your Message:</h4>
+            <ul>
+                <li><a href="#tabs-file">File</a></li>
+                <li><a href="#tabs-data">Data</a></li>
+            </ul>
+            <div id="tabs-file">
+                <!-- file list from data_store -->
+                <div id="accordion-files">
+                    {% for name, data in files.items %}
+                        <h5 id="code-{{ name }}">{{ name }}</h5>
+                        <div>
+                            <pre style="height: 150px;">
+                                <code>{{ data | linebreaksbr }}</code>
+                            </pre>
+                        </div>
+                    {% endfor %}
+                </div>
+                <input id="msg-file" name="msg-file" type="hidden" value="{{ msg_file }}">
+            </div>
+            <div id="tabs-data">
+                <p>Enter your message:</p>
+                <textarea id="msg-data" name="msg-data" rows="15" style="width: 100%;"
+                          class="ui-widget-content">{{ msg_data }}</textarea>
+            </div>
+            <input id="msg-source" name="msg-source" type="hidden">
+        </div>
+
+
+        <div class="container content" xmlns="http://www.w3.org/1999/html">
+
+                <!-- data & general configs -->
+                <table style="width: 100%;">
+{#                    <tr>#}
+{#                        <td><input id="radio-file" name='choice-msg' type="radio" value="file" {% if choice == 'file' %}checked="true"{% endif %}>file:</td>#}
+{#                        <td>#}
+{#                            <input id="selected-file" name="selected-file" style="width: 80%;" class="ui-widget-content" type="text" value="{{ selected_file }}">#}
+{#                        </td>#}
+{#                    </tr>#}
+{#                    <tr>#}
+{#                        <td><input id="radio-data" name='choice-msg' class="ui-widget-content" type="radio" value="data" {% if choice == 'data' %}checked="true"{% endif %}>data:</td>#}
+{#                        <td>#}
+{#                            <textarea id="selected-data" name="selected-data" rows="5" style="width: 80%;" class="ui-widget-content">{{ selected_data }}</textarea>#}
+{#                        </td>#}
+{#                    </tr>#}
+
+                </table>
+
+                <!-- MQ selections & configs -->
+                <div id="tabs-mq">
+                    <ul>
+                        <li><a href="#tabs-rabbit">{{ MQTypes.RabbitMQ }}</a></li>
+                        <li><a href="#tabs-kafka">{{ MQTypes.Kafka }}</a></li>
+                    </ul>
+                    <div id="tabs-rabbit">
+                        <table style="width: 95%;">
+                            <tr>
+                                <td colspan="2">
+                                    <p>Specify either "queue" or "exchange" + "key".</p>
+
+                                    <p>Select a file (click left list) or enter your data.</p>
+                                    <hr>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label for="queue">queue:</label></td>
+                                <td><input name="queue" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="queue name" value="{{ queue }}"></td>
+                            </tr>
+                            <tr>
+                                <td><label for="exchange">exchange:</label></td>
+                                <td><input name="exchange" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="exchange name" value="{{ exchange }}"></td>
+                            </tr>
+                            <tr>
+                                <td><label for="key">key:</label></td>
+                                <td><input name="key" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="binding key (for exchange only)" value="{{ key }}"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div id="tabs-kafka">
+                        <p>Kafka is not supported yet.</p>
+                    </div>
+                    <input id="mq" name="mq" type="hidden">
+                </div>
+
+                <!-- overriding plugins -->
+                <div>
+                    <table>
+                         <tr>
+                        <td><input type="checkbox" name="check-uuid" {% if auto_uuid %}checked="true"{% endif %}>auto uuid</td>
+                        <td>(random for each)</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" name="check-time" {% if auto_time %}checked="true"{% endif %}>auto create_time</td>
+                        <td>(current utc time for each)</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" name="check-timeout" {% if timeout > 0 %}checked="true"{% endif %}>timeout (seconds)</td>
+                        <td><input type="text" name="timeout" class="ui-widget-content" style="width: 80%;" value="{{ timeout|default_if_none:"3000" }}"></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" name="check-count" {% if count > 1 %}checked="true" {% endif %}><span>message count:</span></td>
+                        <td><input type="text" name="count" class="ui-widget-content" style="width: 80%;" value="{{ count|default_if_none:1 }}"></td>
+                    </tr>
+                    </table>
+                </div>
+
+                <!-- buttons -->
+                <div>
+                    <hr/>
+                    <input class="ui-button" type="submit" name="btn-send-submit" value="send"/>
+                    <input class="ui-button" type="reset" name="btn-send-reset" value="reset"/>
+                </div>
+
+        </div>
+
+    </form>
+
+{% endblock %}
+
+{% block script %}
+<script language="JavaScript">
+    $("#accordion-files").accordion();
+    $( "#tabs-msg" ).tabs();
+    $( "#tabs-mq" ).tabs();
+
+    // update selected file name
+    $("#accordion-files").click(function(){
+        fname = $(".ui-accordion-header[aria-expanded$='true']").text();
+        $("#msg-file").val(fname);
+    });
+    $("#accordion-files").click();
+
+    // message selection source
+    $("#tabs-msg").click(function(){
+        src = $("#tabs-msg").find("li[aria-expanded$='true']").text();
+        $("#msg-source").val(src);
+    });
+    $("#tabs-msg").click();
+
+    // MQ selection
+    $("#tabs-mq").click(function(){
+        src = $("#tabs-mq").find("li[aria-expanded$='true']").text();
+        $("#mq").val(src);
+    });
+    $("#tabs-mq").click();
+
+</script>
+{% endblock %}

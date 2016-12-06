@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Log {{ func }} {{ pid }}{% endblock %}
+
+{% block content %}
+    <div class="container">
+
+        <div>
+            <form name="xxx" action="" method="post">
+                {% csrf_token %}
+                <table>
+                    <tr>
+                        <td><label for="cmd">command:</label></td>
+                        <td><input name="cmd" type="text" placeholder="python manage.py import"></td>
+                        <td><input class="ui-button-icon-primary" type="submit" name="btn-submit" value="Save"/></td>
+                        <td><input class="ui-button-icon-secondary" type="reset" name="btn-reset" value="Reset"/></td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+
+        <div class="container content">
+                <div id="logs"></div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script language="JavaScript" type="text/javascript">
+        var ws = new WebSocket("ws://localhost:8081/test/");
+        ws.onopen = function() {
+            ws.send('test');
+        };
+        ws.onmessage = function(event) {
+            $("#logs").append('<p>' + event.data + '</p>');
+        };
+        ws.onclose = function(event) {
+            console.log('quit.' +  ws.readyState);
+        };
+
+        $(window).onunload = function(){
+            ws.close();
+        };
+
+    </script>
+{% endblock %}

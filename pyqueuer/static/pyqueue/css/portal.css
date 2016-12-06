@@ -1,0 +1,42 @@
+
+body {
+    font: 62.5% "Trebuchet MS", sans-serif;
+    margin: 50px;
+}
+
+input {
+    font: 100% "Trebuchet MS", sans-serif;
+}
+
+pre code {
+    font: 100% "consolas", "courier new";
+}
+
+.container{
+    width: 80%;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+}
+
+.content{
+    width: 54%;
+    float: left;
+    margin-right: 3%;
+}
+
+.sidebar-left{
+    width: 20%;
+    float: left;
+    margin-right: 3%;
+}
+
+.sidebar-right{
+    width: 20%;
+    float: left;
+}
+
+.system-message {
+    max-height: 200px;
+	overflow-y: scroll;
+}

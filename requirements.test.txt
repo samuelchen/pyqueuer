@@ -1,0 +1,8 @@
+tox
+django-nose
+nose
+# testtools
+# flake8
+# coverage
+# coveralls
+# mock>=1.0

@@ -1,0 +1,47 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>{% block title %}CA Utils{% endblock %}</title>
+    <link href="{% static 'pyqueue/jq/jquery-ui.min.css' %}" rel="stylesheet">
+    <link href="{% static 'pyqueue/css/portal.css' %}" rel="stylesheet">
+    <script src="{% static 'pyqueue/jq/jquery-3.0.0.min.js' %}"></script>
+    <script src="{% static 'pyqueue/jq/jquery-ui.min.js' %}"></script>
+    {% block head %}<!--HEAD BLOCK-->{% endblock %}
+</head>
+<body>
+<div class="topnav">
+    <div class="toolbar">
+        <div style="float:left">
+        <a href="/">Home</a>
+        <a href="/setting">Setting</a>
+        <a href="/send">Send</a>
+        <a href="/consume">Consume</a>
+{#        <a href="/log">Log</a>#}
+{#        <a href="/test">Test</a>#}
+        {% if request.user.is_staff %}
+            <a href="/admin">Admin</a>
+        {% endif %}
+        </div>
+        <div style="float:right">
+        {% if request.user.is_authenticated %}
+            <span>{{ request.user }}. </span>
+            <a href="/logout">Logout</a>
+        {% endif %}
+        </div>
+        <div style="clear: both"></div>
+    </div>
+</div>
+<hr/>
+
+{% include "pyqueuer/includes/message.html" %}
+
+{% block content %}<!--CONTENT BLOCK-->{% endblock %}
+
+{% block script %}<!--SCRIPT BLOCK-->{% endblock %}
+
+</body>
+
+</html>

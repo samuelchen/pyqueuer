@@ -1,0 +1,94 @@
+{% extends 'base.html' %}{% load staticfiles %}
+
+{% block title %}Consume{% endblock %}
+
+{% block head %}
+    <link href="{% static 'pyqueue/json/s.css' %}" rel="stylesheet">
+    <script src="{% static 'pyqueue/json/c.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="container" xmlns="http://www.w3.org/1999/html">
+
+        <div>
+            <form name="form-consume" action="" method="post">
+                {% csrf_token %}
+                <table>
+                    <tr>
+                        <td><label for="queue">queue (optional):</label></td>
+                        <td><input name="queue" type="text" placeholder="queue name" value="{{ queue }}"></td>
+                        <td><label for="exchange">exchange (optional):</label></td>
+                        <td><input name="exchange" type="text" placeholder="exchange name" value="{{ exchange }}"></td>
+                        <td><label for="key">key (optional):</label></td>
+                        <td><input name="key" type="text" placeholder="binding key (for exchange only)" value="{{ key }}"></td>
+                        <td><input class="ui-button-text" type="submit" name="btn-consume-submit" value="start a new consumer"/></td>
+                        <td><input class="ui-button-text" type="reset" name="btn-consume-reset" value="reset"/></td>
+                    </tr>
+                    <tr>
+                        <td><input name="check-save" type="checkbox" /><label for="save">Auto save results</label></td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+        <hr/>
+
+        <div class="container">
+            <table><tr>
+            {% for svc in services.values %}
+            <td width="200px" valign="top"><table  border="1">
+                <tr>
+                <form name="form-consume" action="" method="post">
+                    {% csrf_token %}
+                    <td width="0">
+                        <input type="hidden" name="sid" value="{{ svc.sid }}" />
+                        <input class="ui-icon ui-icon-close" type="submit" title="Close consumer {{ svc.sid }}" name="btn-consume-stop" value="stop this consumer"/>
+                    </td>
+                    <td width="100%">{{ svc.sid }} {{ svc.name }}</td>
+                </form>
+                </tr>
+                <tr><td colspan="2">
+                    <div id="{{ svc.sid }}"></div>
+                    <p><a href="/output/?sid={{ svc.sid }}" target="_blank">output</a></p>
+                    <script language="JavaScript">
+                        setInterval(function(){
+                            $.ajax({
+                                type: "GET",
+                                url: "/output/?sid={{ svc.sid }}",
+                                success: function(messages, status, xhr) {
+                                    var panel = $("#{{ svc.sid }}");
+                                    panel.html("");
+                                    $.each(messages, function(idx, val) {
+                                        if (typeof val.message == "string")
+                                            panel.append('<p>' + val.time.substr(11,12) + ' ' + val.message + '</p>');
+                                        else {
+                                            var tm = val.time.substr(11,12);
+                                            panel.append('<p>' + tm + '</p>');
+                                            panel.append('<div id="Canvas{{ svc.sid }}_' + tm + '" class="Canvas"></div>');
+                                            ProcessJson(val.message, "Canvas{{ svc.sid }}_" + tm);
+                                        }
+                                    });
+                                },
+                                error: function(xhr, status, error) {
+                                    $("#{{ svc.sid }}").html('<p style="color:red">' + xhr.status + ' - Consumer error.<br/> Refresh in 3 seconds</p>');
+                                    setTimeout(function() {
+                                        $( location ).attr("href", "/consume");
+                                    }, 3000);
+                                }
+                            });
+                        }, 2000);
+
+                    </script>
+                </td></tr>
+            </table></td>
+            {% endfor %}
+            </tr></table>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script language="JavaScript">
+        $("#1").append('<p> hello </p>');
+    </script>
+{% endblock %}
