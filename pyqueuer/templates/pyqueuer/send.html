@@ -27,34 +27,18 @@
                     {% endfor %}
                 </div>
                 <input id="msg-file" name="msg-file" type="hidden" value="{{ msg_file }}">
+                <input id="msg-file-num" name="msg-file-num" type="hidden" value="{{ msg_file_num }}">
             </div>
             <div id="tabs-data">
                 <p>Enter your message:</p>
                 <textarea id="msg-data" name="msg-data" rows="15" style="width: 100%;"
                           class="ui-widget-content">{{ msg_data }}</textarea>
             </div>
-            <input id="msg-source" name="msg-source" type="hidden">
+            <input id="msg-source" name="msg-source" type="hidden" value="{{ msg_source }}">
         </div>
 
 
         <div class="container content" xmlns="http://www.w3.org/1999/html">
-
-                <!-- data & general configs -->
-                <table style="width: 100%;">
-{#                    <tr>#}
-{#                        <td><input id="radio-file" name='choice-msg' type="radio" value="file" {% if choice == 'file' %}checked="true"{% endif %}>file:</td>#}
-{#                        <td>#}
-{#                            <input id="selected-file" name="selected-file" style="width: 80%;" class="ui-widget-content" type="text" value="{{ selected_file }}">#}
-{#                        </td>#}
-{#                    </tr>#}
-{#                    <tr>#}
-{#                        <td><input id="radio-data" name='choice-msg' class="ui-widget-content" type="radio" value="data" {% if choice == 'data' %}checked="true"{% endif %}>data:</td>#}
-{#                        <td>#}
-{#                            <textarea id="selected-data" name="selected-data" rows="5" style="width: 80%;" class="ui-widget-content">{{ selected_data }}</textarea>#}
-{#                        </td>#}
-{#                    </tr>#}
-
-                </table>
 
                 <!-- MQ selections & configs -->
                 <div id="tabs-mq">
@@ -92,7 +76,7 @@
                     <div id="tabs-kafka">
                         <p>Kafka is not supported yet.</p>
                     </div>
-                    <input id="mq" name="mq" type="hidden">
+                    <input id="mq" name="mq" type="hidden" value="{{ mq }}">
                 </div>
 
                 <!-- overriding plugins -->
@@ -133,29 +117,36 @@
 {% block script %}
 <script language="JavaScript">
     $("#accordion-files").accordion();
-    $( "#tabs-msg" ).tabs();
-    $( "#tabs-mq" ).tabs();
+    $("#tabs-msg").tabs();
+    $("#tabs-mq").tabs();
 
     // update selected file name
-    $("#accordion-files").click(function(){
+    $("#accordion-files").click(function () {
         fname = $(".ui-accordion-header[aria-expanded$='true']").text();
         $("#msg-file").val(fname);
+        $("#msg-file-num").val($("#accordion-files").accordion("option", "active"));
     });
-    $("#accordion-files").click();
+    $("#accordion-files").accordion("option", "active", {{ msg_file_num | default:0 }});
 
     // message selection source
-    $("#tabs-msg").click(function(){
+    $("#tabs-msg").click(function () {
         src = $("#tabs-msg").find("li[aria-expanded$='true']").text();
         $("#msg-source").val(src);
     });
-    $("#tabs-msg").click();
+    if ("{{ msg_source }}" == "data")
+        $("[href='#tabs-data").trigger("click");
+    else
+        $("#tabs-msg").click();
 
     // MQ selection
-    $("#tabs-mq").click(function(){
+    $("#tabs-mq").click(function () {
         src = $("#tabs-mq").find("li[aria-expanded$='true']").text();
         $("#mq").val(src);
     });
-    $("#tabs-mq").click();
+    if ("{{ mq }}" == "Kafka")
+        $("[href='#tabs-kafka']").trigger("click");
+    else
+        $("#tabs-mq").click();
 
 </script>
 {% endblock %}

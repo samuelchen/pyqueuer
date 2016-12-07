@@ -12,6 +12,7 @@ import collections
 import simplejson as json
 import uuid
 import datetime
+import pathlib
 import logging
 log = logging.getLogger(__name__)
 
@@ -57,7 +58,6 @@ class PropertyDict(collections.OrderedDict):
     #     self.__fail_as_none = value
 
 
-@staticmethod
 def update_message(json_str, auto_uuid=False, auto_time=True, timeout=-1):
 
     if not (auto_uuid or auto_time or timeout > 0):
@@ -72,3 +72,14 @@ def update_message(json_str, auto_uuid=False, auto_time=True, timeout=-1):
         item['time_out'] = timeout * 1000  # s -> ms
     rc = json.dumps(item)
     return rc
+
+
+def load_plugins(path):
+    files = []
+    p = pathlib.Path(path)
+    if p.is_dir():
+        for q in p.iterdir():
+            try:
+                files.append(q.name)
+            except Exception as err:
+                log.exception(err)

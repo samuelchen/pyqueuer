@@ -90,20 +90,21 @@ def send(request):
 
     try:
         if request.method == 'POST':
-            for r in request.POST:
-                print(r + ' - ' + request.POST[r])
+            # for r in request.POST:
+            #     print(r + ' - ' + request.POST[r])
 
             # load message string
-            msg_source = request.POST['msg-source']
+            msg_source = request.POST['msg-source'].lower()
             msg_file = request.POST['msg-file']
             msg_data = request.POST['msg-data']
+            msg_file_num = request.POST['msg-file-num']
             msg = ''
             if msg_source == 'data':
                 msg = msg_data
             elif msg_source == 'file':
                 fname = os.path.sep.join([ucfg.get(GeneralConfKeys.data_store), msg_file])
-                with open(fname) as f:
-                    msg = f.read(140) + '\n ...'
+                with open(fname, 'tr') as f:
+                    msg = f.read()
 
             # overriding plugins
             is_plugin_enabled = False
@@ -130,6 +131,7 @@ def send(request):
                 # process_plugin('plugin', msg)
                 pass
             client.send(msg, queue)
+            message = 'Message sent.'
 
     except KeyError as err:
         log.exception(err)
@@ -143,10 +145,10 @@ def send(request):
     if p.is_dir():
         for q in p.iterdir():
             try:
-                with q.open() as f:
-                    files[q.name] = f.read()
-            except:
-                pass
+                with q.open('tr') as f:
+                    files[q.name] = f.read(150) + '\n ...'
+            except Exception as err:
+                log.exception(err)
 
     context = {
         "MQTypes": MQTypes,
@@ -174,16 +176,19 @@ def consume(request):
 
         if 'sid' in request.POST:
             sid = int(request.POST['sid'])
-            ServiceUtils.stop_consumer(sid=sid)
+            ServiceUtils.stop_consumer(user=request.user, sid=sid)
         else:
             queue = request.POST['queue']
             exchange = request.POST['exchange']
             key = request.POST['key']
             auto_save = 'check-save' in request.POST and True or False
 
+            conf = get_confs(user=request.user, mq_type=MQTypes.RabbitMQ)
+            client = create_client(mq_type=MQTypes.RabbitMQ, conf=conf)
+
             count = len(ServiceUtils.consumers)
             if count < max_consumers:
-                svc = ServiceUtils.start_consumer(key=key, queue=queue, exchange=exchange, autosave=auto_save)
+                svc = ServiceUtils.start_consumer(user=request.user, client=client, key=key, queue=queue, exchange=exchange, autosave=auto_save)
                 if queue:
                     svc.name = 'Queue:%s' % queue
                 elif exchange and key:
@@ -191,7 +196,7 @@ def consume(request):
             else:
                 error = 'You can only start %d consumers' % max
 
-    svcs = ServiceUtils.consumers
+    svcs = ServiceUtils.consumers[request.user] if request.user in ServiceUtils.consumers else {}
     context = {
         "queue": queue,
         "exchange": exchange,
@@ -201,3 +206,17 @@ def consume(request):
         "error": error,
     }
     return render(request, t('consume.html'), context=context)
+
+
+@require_http_methods(['GET', ])
+def output(request):
+    if request.user in ServiceUtils.consumers:
+        sid = int(request.GET['sid']) if 'sid' in request.GET else None
+        if sid in ServiceUtils.consumers[request.user]:
+            svc = ServiceUtils.consumers[request.user][sid]
+            out = svc.flush_output()
+            # print(json.dumps(out))
+            # print(len(out))
+            return JsonResponse(out, safe=False)
+        else:
+            return HttpResponseNotFound()

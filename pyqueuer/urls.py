@@ -27,5 +27,5 @@ urlpatterns = [
     # url(r'^setting/import/', views.setting),
     url(r'^send/', views.send),
     url(r'^consume/', views.consume),
-    # url(r'^output/', views.output),
+    url(r'^output/', views.output),
 ]

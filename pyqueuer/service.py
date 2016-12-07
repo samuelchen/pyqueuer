@@ -154,9 +154,14 @@ class ConsumerService(Service):
 
         def on_msg(msg):
             # print(" [x] [%s] %r" % (str(datetime.datetime.now())[:-3], msg))
+            try:
+                msg = json.loads(msg)
+            except:
+                msg = msg.decode('utf-8')
+            log.debug('Received message: "%s"' % msg)
             if self.autosave:
                 self._save_message(msg)
-            output.write(json.loads(msg))
+            output.write(msg)
 
         # client = mq.RabbitMQBlockingClient(
         #     host=models.Setting.get('rabbitmq_host'),
@@ -167,7 +172,7 @@ class ConsumerService(Service):
         # )
         client = self._ctx['client']
 
-        output.write('[*] Waiting for messages. To exit press [x]')
+        output.write('[*] Waiting for messages.')
 
         client.connect()
 
@@ -181,16 +186,18 @@ class ConsumerService(Service):
             client.consume_ex(exchange=exchange, key=key, callback=on_msg, stop_event=stop_event)
 
         output.write('[*] Consumer quit.')
-        client.close()
+        client.disconnect()
 
     def _save_message(self, msg):
-        obj = json.loads(msg)
+        # obj = json.loads(msg)
         try:
-            sender = obj['sender_name']
-            receiver = obj['receiver_name']
-            uuid = obj['uuid']
+            # TODO: plugin to obtain more messages to generate better name
+            # sender = obj['sender_name']
+            # receiver = obj['receiver_name']
+            # uuid = obj['uuid']
             tm = str(datetime.datetime.utcnow()).replace(':', '').replace('.', ' ')[0:-3]
-            name = '.'.join([sender, receiver, tm, uuid, 'json'])
+            # name = '.'.join([sender, receiver, tm, uuid, 'json'])
+            name = '.'.join([tm, 'json'])
             fname = os.path.abspath(os.path.sep.join([self._save_folder, name]))
             with open(fname, mode='wb') as f:
                 f.write(msg)
@@ -207,8 +214,9 @@ class ServiceUtils(object):
     @classmethod
     def consumer_on_quit(cls, user, svc):
         if svc:
-            if svc.sid in cls.consumers:
-                cls.consumers[user].pop(svc.sid)
+            if user in cls.consumers:
+                if svc.sid in cls.consumers[user]:
+                    cls.consumers[user].pop(svc.sid)
 
     @classmethod
     def start_consumer(cls, user, client, queue, key, exchange, autosave=False):
@@ -220,10 +228,13 @@ class ServiceUtils(object):
         svc.autosave = autosave
         svc.on_quit = ServiceUtils.consumer_on_quit
         svc.start()
+        if user not in cls.consumers:
+            cls.consumers[user] = {}
         cls.consumers[user][svc.sid] = svc
         return svc
 
     @classmethod
     def stop_consumer(cls, user, sid):
-        svc = cls.consumers[user].pop(sid)
-        svc.stop()
+        if user in cls.consumers:
+            svc = cls.consumers[user].pop(sid)
+            svc.stop()

@@ -41,14 +41,18 @@ class RabbitMQBlockingClient(MQClient):
             raise Exception('You must specify the configurations in dict')
 
     def connect(self):
-        try:
-            if self._conn is None:
+        count = 0
+        while self._conn is None:
+            try:
+                count += 1
                 credentials = pika.PlainCredentials(self._user, self._passwd)
                 parameters = pika.ConnectionParameters(host=self._host, port=self._port, virtual_host=self._vhost,
                                                        credentials=credentials)
                 self._conn = pika.BlockingConnection(parameters)
-        except pika.exceptions.ConnectionClosed:
-            log.warn('Fail connecting RabbitMQ server %s:%s.' % (self._host, self._port))
+            except pika.exceptions.ConnectionClosed:
+                log.warn('Fail connecting RabbitMQ server %s:%s.' % (self._host, self._port))
+                if count >= 3 or not self.auto_reconnect:
+                    raise
 
     def disconnect(self):
         if self._channel_consuming is not None:
@@ -93,24 +97,25 @@ class RabbitMQBlockingClient(MQClient):
     # ------------------------
 
     def send_ex(self, msg, exchange, key):
+        log.debug('Sending message "%s"' % msg)
         channel = self._get_producing_channel()
 
         channel.basic_publish(exchange,
                               key, msg,
                               pika.BasicProperties(
-                                  content_type='application/json',
+                                  content_type='plain/text',
                                   delivery_mode=2))
 
-        log.info('Message sent.')
+        log.info('Message sent to exchange topic "%s" key "%s".' % exchange, key)
 
     def send(self, msg, queue):
+        log.debug('Sending message "%s"' % msg)
         channel = self._get_producing_channel()
 
         channel.basic_publish('', queue, msg,
                               pika.BasicProperties(
-                                  content_type='application/json',
+                                  content_type='plain/text',
                                   delivery_mode=2))
-
         log.info('Message sent to queue "%s".' % queue)
 
     def consume_ex(self, exchange, key, callback, stop_event=None):
@@ -150,6 +155,8 @@ class RabbitMQBlockingClient(MQClient):
 
         while True:
             method, properties, body = channel.basic_get(queue=queue_name, no_ack=True)
+            # if method or properties:
+            #     print(method, properties)
             if body:
                 callback(body)
             if stop_event is None or stop_event.isSet():
