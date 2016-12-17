@@ -2,13 +2,16 @@
 # coding: utf-8
 
 from django.shortcuts import render, get_list_or_404, get_object_or_404
+from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseNotFound
 from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys
+from .models import PluginStackModel
 from .utils import PropertyDict
 from .mq import create_client, MQTypes, get_confs
 from .service import ServiceUtils
+from .plugin import Plugins
 import os
 import pathlib
 
@@ -18,6 +21,10 @@ log = logging.getLogger(__name__)
 
 def t(template):
     return 'pyqueuer/' + template
+
+
+def test(request):
+    return render(request, t('test.html'))
 
 
 @require_http_methods(['GET', ])
@@ -77,6 +84,7 @@ def setting(request):
     return render(request, t('setting.html'), context=context)
 
 
+@login_required
 @require_http_methods(['GET', 'POST'])
 def send(request):
     message = None
@@ -160,6 +168,8 @@ def send(request):
 
     return render(request, t('send.html'), context=context)
 
+
+@login_required
 @require_http_methods(['GET', 'POST'])
 def consume(request):
     msg = None
@@ -208,6 +218,7 @@ def consume(request):
     return render(request, t('consume.html'), context=context)
 
 
+@login_required
 @require_http_methods(['GET', ])
 def output(request):
     if request.user in ServiceUtils.consumers:
@@ -220,3 +231,62 @@ def output(request):
             return JsonResponse(out, safe=False)
         else:
             return HttpResponseNotFound()
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def plugin(request):
+    msg = None
+    error = None
+    stacks = {}
+
+    chk_prefix = 'stack'
+    rename_prefix = 'rename'
+    spliter = '--'
+
+    mgr = Plugins
+    ucfg = UserConf(user=request.user)
+
+    if request.method == 'POST':
+        req_rename = {}
+        req_stack = []
+        for chk in request.POST:
+            print(chk, ' - ', request.POST[chk])
+            if chk.startswith('%s%s' % (chk_prefix, spliter)):
+                req_stack.append(chk)
+            elif chk.startswith('%s%s' % (rename_prefix, spliter)):
+                tmp = chk.split(spliter)
+                old_name = tmp[1]
+                new_name = request.POST[chk]
+                if old_name != new_name:
+                    req_rename[old_name] = new_name
+
+        for chk in req_stack:
+            tmp = chk.split(spliter)
+            stack = tmp[1]
+            plug = tmp[2]
+            if stack in req_rename:
+                stack = req_rename[stack]
+            obj, created = PluginStackModel.objects.get_or_create(
+                user=request.user, stack=stack, plugin=plug)
+            if created:
+                obj.save()
+                log.debug('Plugin-stack "%s" added plugin "%s"' % (stack, plug))
+
+        for old_name, new_name in req_rename.items():
+            log.info('Plugin-stack "%s" renamed to "%s"' % (old_name, new_name))
+            PluginStackModel.objects.filter(user=request.user, stack=old_name).delete()
+
+    plugins = mgr.all()
+    for item in PluginStackModel.objects.filter(user=request.user).order_by('stack', 'plugin'):
+        if item.stack not in stacks:
+            stacks[item.stack] = []
+        stacks[item.stack].append(item.plugin)
+
+    context = {
+        "plugins": plugins,
+        "stacks": stacks,
+        "message": msg,
+        "error": error,
+    }
+    return render(request, t('plugin.html'), context=context)

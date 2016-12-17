@@ -1,46 +1,64 @@
 {% extends 'base.html' %}
 
-{% block title %}Log {{ func }} {{ pid }}{% endblock %}
+{% block title %}test{% endblock %}
+
+{% block head %}
+  <script>
+{#$( "input" ).checkboxradio();#}
+  </script>
+{% endblock %}
+
 
 {% block content %}
-    <div class="container">
+<div class="widget">
+  <h1>Checkbox and radio button widgets</h1>
 
-        <div>
-            <form name="xxx" action="" method="post">
-                {% csrf_token %}
-                <table>
-                    <tr>
-                        <td><label for="cmd">command:</label></td>
-                        <td><input name="cmd" type="text" placeholder="python manage.py import"></td>
-                        <td><input class="ui-button-icon-primary" type="submit" name="btn-submit" value="Save"/></td>
-                        <td><input class="ui-button-icon-secondary" type="reset" name="btn-reset" value="Reset"/></td>
-                    </tr>
-                </table>
-            </form>
-        </div>
+  <h2>Radio Group</h2>
+  <fieldset>
+    <legend>Select a Location: </legend>
+    <label for="radio-1">New York</label>
+    <input type="radio" name="radio-1" id="radio-1">
+    <label for="radio-2">Paris</label>
+    <input type="radio" name="radio-1" id="radio-2">
+    <label for="radio-3">London</label>
+    <input type="radio" name="radio-1" id="radio-3">
+  </fieldset>
 
-        <div class="container content">
-                <div id="logs"></div>
-        </div>
-    </div>
+  <h2>Checkbox</h2>
+  <fieldset>
+    <legend>Hotel Ratings: </legend>
+    <label for="checkbox-1">2 Star</label>
+    <input type="checkbox" name="checkbox-1" id="checkbox-1">
+    <label for="checkbox-2">3 Star</label>
+    <input type="checkbox" name="checkbox-2" id="checkbox-2">
+    <label for="checkbox-3">4 Star</label>
+    <input type="checkbox" name="checkbox-3" id="checkbox-3">
+    <label for="checkbox-4">5 Star</label>
+    <input type="checkbox" name="checkbox-4" id="checkbox-4">
+  </fieldset>
+
+  <h2>Checkbox nested in label</h2>
+  <fieldset>
+    <legend>Bed Type: </legend>
+    <label for="checkbox-nested-1">2 Double
+      <input type="checkbox" name="checkbox-nested-1" id="checkbox-nested-1">
+    </label>
+    <label for="checkbox-nested-2">2 Queen
+      <input type="checkbox" name="checkbox-nested-2" id="checkbox-nested-2">
+    </label>
+    <label for="checkbox-nested-3">1 Queen
+      <input type="checkbox" name="checkbox-nested-3" id="checkbox-nested-3">
+    </label>
+    <label for="checkbox-nested-4">1 King
+      <input type="checkbox" name="checkbox-nested-4" id="checkbox-nested-4">
+    </label>
+  </fieldset>
+</div>
+
 {% endblock %}
 
 {% block script %}
-    <script language="JavaScript" type="text/javascript">
-        var ws = new WebSocket("ws://localhost:8081/test/");
-        ws.onopen = function() {
-            ws.send('test');
-        };
-        ws.onmessage = function(event) {
-            $("#logs").append('<p>' + event.data + '</p>');
-        };
-        ws.onclose = function(event) {
-            console.log('quit.' +  ws.readyState);
-        };
-
-        $(window).onunload = function(){
-            ws.close();
-        };
-
-    </script>
+  <script>
+$( "input" ).checkboxradio({icon:false});
+  </script>
 {% endblock %}

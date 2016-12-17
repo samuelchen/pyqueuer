@@ -28,4 +28,6 @@ urlpatterns = [
     url(r'^send/', views.send),
     url(r'^consume/', views.consume),
     url(r'^output/', views.output),
+    url(r'^plugin/', views.plugin),
+    url(r'^test/', views.test),
 ]

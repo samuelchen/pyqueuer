@@ -69,8 +69,8 @@ ConfKeys = PropertyDict([
     ('kafka', KafkaConfKeys),
 ])
 
-# ----------- Models --------------
 
+# ----------- Models --------------
 
 class BaseModel(models.Model):
     user = models.ForeignKey(User if not hasattr(settings, 'AUTH_USER_MODEL') else settings.AUTH_USER_MODEL)
@@ -80,9 +80,25 @@ class BaseModel(models.Model):
 
 
 class Config(BaseModel):
-    name = models.CharField(primary_key=True, max_length=100)
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
     value = models.TextField()
 
+    class Meta:
+        unique_together = ('user', 'name')
+
+
+class PluginStackModel(BaseModel):
+    id = models.AutoField(primary_key=True)
+    stack = models.CharField(max_length=250)
+    plugin = models.CharField(max_length=250)
+    desc = models.TextField()
+
+    class Meta:
+        unique_together = ('user', 'stack', 'plugin')
+
+
+# ---------- Utils -----------------
 
 class UserConf(object):
     """
@@ -112,4 +128,3 @@ class UserConf(object):
 
     def all(self):
         return Config.objects.filter(user=self._user)
-

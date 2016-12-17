@@ -21,7 +21,11 @@ def spacify(value, autoescape=None):
 def _2space(value):
     return value.replace('_', ' ')
 
+@stringfilter
+def space2_(value):
+    return value.replace(' ', '_')
 
 spacify.needs_autoescape = True
 register.filter(spacify)
 register.filter(_2space)
+register.filter(space2_)

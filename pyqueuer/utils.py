@@ -74,12 +74,35 @@ def update_message(json_str, auto_uuid=False, auto_time=True, timeout=-1):
     return rc
 
 
-def load_plugins(path):
-    files = []
-    p = pathlib.Path(path)
-    if p.is_dir():
-        for q in p.iterdir():
-            try:
-                files.append(q.name)
-            except Exception as err:
-                log.exception(err)
+from yapsy.PluginManager import PluginManager
+from yapsy.PluginFileLocator import PluginFileAnalyzerMathingRegex
+from pyqueuer.plugin import MessageAutoUpdater, MessageUpdater, Plugins
+
+
+def up_message(msg, plugin_names):
+    mgr = Plugins
+
+    for plugin in mgr.all('AutoUpdaters'):
+        try:
+            print(plugin.name, plugin)
+            msg = plugin.plugin_object.update(msg)
+        except Exception as err:
+            log.exception(err)
+
+    values = {
+        'json_timeout_updater': ('time_out', 10)
+    }
+    for plugin in mgr.all('Updaters'):
+        try:
+            print(plugin.name, plugin)
+            k, v = values[plugin.name]
+            plugin.plugin_object.key = k
+            msg = plugin.plugin_object.update(msg, v)
+        except Exception as err:
+            log.exception(err)
+
+    return msg
+
+
+if __name__ == '__main__':
+    print(up_message('{"uuid": "123", "time_out": "99", "create_time": "2016-12-01Z18:23:43.343"}', ['sample_json']))

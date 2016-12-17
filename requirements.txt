@@ -2,3 +2,4 @@ django
 simplejson
 configparser
 pika
+yapsy
