@@ -12,8 +12,17 @@
             padding-right: 20px;
         }
 
-        #tabs-stack li .ui-icon-close { float: left; margin: 0.4em 0.2em 0 0; cursor: pointer; }
-        #tabs-stack li .ui-icon-pencil { float: left; margin: 0.4em 0.2em 0 0; cursor: pointer; }
+        #tabs-stack li .ui-icon-close {
+            float: left;
+            margin: 0.4em 0.2em 0 0;
+            cursor: pointer;
+        }
+
+        #tabs-stack li .ui-icon-pencil {
+            float: left;
+            margin: 0.4em 0.2em 0 0;
+            cursor: pointer;
+        }
     </style>
 {% endblock %}
 
@@ -23,25 +32,6 @@
 
         <form name="form-plugin" action="" method="post">
             {% csrf_token %}
-{#            <div class="controlgroup">#}
-{#                <fieldset>#}
-{#                    <legend>Available Plugins</legend>#}
-{#                    <ul id="source-list" style="width:800px">#}
-{#                    {% for plugin in plugins %}#}
-{#                        <li id="{{ plugin.name }}">#}
-{#                            <span><input name="status" type="checkbox" {% if plugin.is_activated %}#}
-{#                                   checked=true {% endif %}>#}
-{#                            </span><span>{{ plugin.name }}#}
-{#                            </span><span>{{ plugin.author }}#}
-{#                            </span><span>{{ plugin.version }}#}
-{#                            </span><span>{{ plugin.description }}#}
-{#                            </span>#}
-{#                        </li>#}
-{#                    {% endfor %}#}
-{#                    </ul>#}
-{#                </fieldset>#}
-{#            </div>#}
-
 
             <!-- Group tabs. New or Edit. -->
             <div id="tabs-stack">
@@ -53,7 +43,7 @@
             <div style="clear:both"><p></p></div>
 
             <div>
-                <input class="ui-button" type="button" id="btn-add" name="btn-add" value="Add a stack" />
+                <input class="ui-button" type="button" id="btn-add" name="btn-add" value="Add a stack"/>
                 <input class="ui-button" type="submit" name="btn-submit" value="Save"/>
             </div>
         </form>
@@ -66,8 +56,9 @@
     <script language="javascript">
 
         // tabs
+        var dirty = false;
         var splitter = "{{ splitter }}";
-        var tabs = $( "#tabs-stack" ).tabs();
+        var tabs = $("#tabs-stack").tabs();
         var tabTemplate = "<li>" +
                 "<a href='#{href}'>#{label}</a> " +
                 "<input type='hidden' name='rename{{ splitter }}#{label}' style='float:left' class='ui-widget-content ui-corner-all' value='#{label}'> " +
@@ -75,10 +66,11 @@
                 "<span class='ui-icon ui-icon-close' role='presentation'>Remove</span> " +
                 "</li>";
         var tabContent = "" +
-            {% for plugin in plugins %}
-                "<label for='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>{{ plugin.name }}</label>" +
-                "<input type='checkbox' class='plugin-sel' name='stack{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}' id='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>" +
-            {% endfor %}
+                {% for plugin in plugins %}
+                    "<label for='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>{{ plugin.name }}</label>" +
+                    "<input type='checkbox' class='plugin-sel' name='stack{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}' id='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>"
+                    +
+                {% endfor %}
                 "";
         var tabCounter = 0;
 
@@ -89,6 +81,7 @@
             if (confirm('*WARNING* Are you sure to delete plugin-stack "' + name + '" ?')) {
                 var panelId = $(this).closest("li").remove().attr("aria-controls");
                 $("#" + panelId).remove();
+                dirty = true;
                 tabs.tabs("refresh");
             }
         });
@@ -109,6 +102,7 @@
             };
 
             function edit_done() {
+                dirty = true;
                 inp.attr("type", "hidden");
                 inp.val(inp.val().replace(/[^a-zA-Z0-9_\-]/g, '-'));
                 lnk.text(inp.val());
@@ -136,16 +130,17 @@
             var label = title;
             if (!label) {
                 var n = "Stack-" + tabCounter;
-                $.each(tabs.find("li a"), function(idx, ele) {
+                $.each(tabs.find("li a"), function (idx, ele) {
                     if (n.toLowerCase() == ele.innerText.toLowerCase()) {
                         n = n + '-1';
+                        return false;
                     }
                 });
                 label = n;
             }
             var id = "tabs-" + tabCounter,
-                li = $(tabTemplate.replace(/#\{href\}/g, "#" + id).replace(/#\{label\}/g, label)),
-                tabContentHtml = tabContent.replace(/#\{stack\}/g, label);
+                    li = $(tabTemplate.replace(/#\{href\}/g, "#" + id).replace(/#\{label\}/g, label)),
+                    tabContentHtml = tabContent.replace(/#\{stack\}/g, label);
 
             tabs.find(".ui-tabs-nav").append(li);
             $(this).closest("li").find("input").val(label);
@@ -153,28 +148,37 @@
             tabs.tabs("refresh");
             tabs.tabs("option", "active", tabCounter);
             tabCounter++;
+
+            // plugin checkbox styles
+            $(".plugin-sel").checkboxradio({
+                icon: false
+            });
+
+            $(".plugin-sel").on("change", function(event) {
+                dirty = true;
+            });
         }
 
         // buttons
         $(".ui-button").button();
-        $("#btn-add").click(function(event){
+        $("#btn-add").click(function (event) {
             addTab(null);
-
-            // plugin checkbox styles
-            $(".plugin-sel" ).checkboxradio({
-                icon: false
-            });
+            dirty = true;
         });
 
         // add existed stacks
         {% for stack, plugins in stacks.items %}
-        addTab("{{ stack }}");
+            addTab("{{ stack }}");
             {% for plugin in plugins %}
-{#            console.log("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}  - " + tabs.find("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}"));#}
-            $("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}").prop("checked", true);
+                {#            console.log("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}  - " + tabs.find("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}"));#}
+                $("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}").prop("checked", true);
             {% endfor %}
         {% endfor %}
-        $(".plugin-sel" ).checkboxradio({icon: false});
+        $(".plugin-sel").checkboxradio({icon: false});
+
+        $(window).bind('beforeunload', function (event) {
+            if (dirty) return 'You have unsaved changes.';
+        });
 
     </script>
 {% endblock %}
