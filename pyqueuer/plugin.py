@@ -12,6 +12,9 @@ import abc
 import importlib
 from yapsy.PluginManager import PluginManager
 from yapsy.PluginFileLocator import PluginFileAnalyzerMathingRegex
+import re
+
+re_valid_plugin_name = re.compile(r'^[a-zA-Z0-9_\-]+$')
 
 
 class PluginBase(object):
@@ -104,8 +107,10 @@ class PluginFileAnalyzerMathingRegexWithInfoProperty(PluginFileAnalyzerMathingRe
                         # print(key, value)
                 if hasattr(mod, 'Name'):
                     value = getattr(mod, 'Name')
-                    if '--' in value:
-                        raise ValueError('"--" is not allowed for plugin "Name".')
+                    print(value, ' - ', re_valid_plugin_name.match(value))
+                    if not re_valid_plugin_name.match(value):
+                        raise ValueError('"%s" is not valid plugin name. '
+                                         ' Only A-Z(a-z), 0-9, "_" and "-" are valid.' % value)
                     infos["name"] = value
         except ImportError:
             pass

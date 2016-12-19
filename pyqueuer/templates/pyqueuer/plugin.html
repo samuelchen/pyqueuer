@@ -23,44 +23,40 @@
 
         <form name="form-plugin" action="" method="post">
             {% csrf_token %}
-            <div class="controlgroup">
-                <fieldset>
-                    <legend>Available Plugins</legend>
-                    <ul id="source-list" style="width:800px">
-                    {% for plugin in plugins %}
-                        <li id="{{ plugin.name }}">
-                            <span><input name="status" type="checkbox" {% if plugin.is_activated %}
-                                   checked=true {% endif %}>
-                            </span><span>{{ plugin.name }}
-                            </span><span>{{ plugin.author }}
-                            </span><span>{{ plugin.version }}
-                            </span><span>{{ plugin.description }}
-                            </span>
-                        </li>
-                    {% endfor %}
-                    </ul>
-                </fieldset>
-            </div>
+{#            <div class="controlgroup">#}
+{#                <fieldset>#}
+{#                    <legend>Available Plugins</legend>#}
+{#                    <ul id="source-list" style="width:800px">#}
+{#                    {% for plugin in plugins %}#}
+{#                        <li id="{{ plugin.name }}">#}
+{#                            <span><input name="status" type="checkbox" {% if plugin.is_activated %}#}
+{#                                   checked=true {% endif %}>#}
+{#                            </span><span>{{ plugin.name }}#}
+{#                            </span><span>{{ plugin.author }}#}
+{#                            </span><span>{{ plugin.version }}#}
+{#                            </span><span>{{ plugin.description }}#}
+{#                            </span>#}
+{#                        </li>#}
+{#                    {% endfor %}#}
+{#                    </ul>#}
+{#                </fieldset>#}
+{#            </div>#}
 
-
-            <div>
-                <input class="ui-button" type="button" id="btn-add" name="btn-add" value="Add" />
-                <input class="ui-button" type="submit" name="btn-submit" value="Save"/>
-                <input class="ui-button" type="reset" name="btn-reset" value="Reset"/>
-            </div>
 
             <!-- Group tabs. New or Edit. -->
             <div id="tabs-stack">
-                <h4>Select plugins for your stack:</h4>
+                <h4>Customize Plugin Stack</h4>
                 <ul>
                 </ul>
             </div>
 
-            <div style="clear:both"></div>
+            <div style="clear:both"><p></p></div>
 
-
+            <div>
+                <input class="ui-button" type="button" id="btn-add" name="btn-add" value="Add a stack" />
+                <input class="ui-button" type="submit" name="btn-submit" value="Save"/>
+            </div>
         </form>
-        <a id="hel lo" href="#" onclick="javascript:hello();">hello</a>
 
     </div>
 
@@ -69,46 +65,21 @@
 {% block script %}
     <script language="javascript">
 
-{#        $("#source-list").sortable({#}
-{#            cursor : "move",#}
-{#            helper : "clone",#}
-{#            opacity: 0.5,#}
-{#            placeholder: "sortable-placeholder",#}
-{#            connectWith : "#target-list",#}
-{#            scroll : true,#}
-{#            tolerance: "pointer",#}
-{#            revert : "invalid"#}
-{#        });#}
-{#        $("#source-list").disableSelection();#}
-{##}
-{#        $("#target-list").sortable({#}
-{#            cursor : "move",#}
-{#            helper : "clone",#}
-{#            opacity: 0.5,#}
-{#            placeholder: "sortable-placeholder",#}
-{#            connectWith : "#source-list",#}
-{#            scroll : true,#}
-{#            tolerance: "pointer",#}
-{#            revert : "invalid"#}
-{#        });#}
-{#        $("#target-list").disableSelection();#}
-
-
         // tabs
+        var splitter = "{{ splitter }}";
         var tabs = $( "#tabs-stack" ).tabs();
         var tabTemplate = "<li>" +
                 "<a href='#{href}'>#{label}</a> " +
-                "<input type='hidden' name='rename--#{label}' style='float:left' class='ui-widget-content ui-corner-all' value='#{label}'> " +
+                "<input type='hidden' name='rename{{ splitter }}#{label}' style='float:left' class='ui-widget-content ui-corner-all' value='#{label}'> " +
                 "<span class='ui-icon ui-icon-pencil' role='presentation'>Edit</span> " +
                 "<span class='ui-icon ui-icon-close' role='presentation'>Remove</span> " +
                 "</li>";
-        var tabContent = "<fieldset>" +
+        var tabContent = "" +
             {% for plugin in plugins %}
-                "<label for='chk--#{stack}--{{ plugin.name }}'>{{ plugin.name }}</label>" +
-                "<input type='checkbox' class='plugin-sel' name='stack--#{stack}--{{ plugin.name }}' id='chk--#{stack}--{{ plugin.name }}'>" +
+                "<label for='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>{{ plugin.name }}</label>" +
+                "<input type='checkbox' class='plugin-sel' name='stack{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}' id='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>" +
             {% endfor %}
-          "</fieldset>";
-
+                "";
         var tabCounter = 0;
 
 
@@ -139,7 +110,7 @@
 
             function edit_done() {
                 inp.attr("type", "hidden");
-                inp.val(inp.val().replace('--', '_'));
+                inp.val(inp.val().replace(/[^a-zA-Z0-9_\-]/g, '-'));
                 lnk.text(inp.val());
                 lnk.show();
                 icons.show();
@@ -161,9 +132,18 @@
         });
 
         // function to add a tab.
-        function addTab(title, content) {
-            var label = title || ("Stack " + tabCounter),
-                id = "tabs-" + tabCounter,
+        function addTab(title) {
+            var label = title;
+            if (!label) {
+                var n = "Stack-" + tabCounter;
+                $.each(tabs.find("li a"), function(idx, ele) {
+                    if (n.toLowerCase() == ele.innerText.toLowerCase()) {
+                        n = n + '-1';
+                    }
+                });
+                label = n;
+            }
+            var id = "tabs-" + tabCounter,
                 li = $(tabTemplate.replace(/#\{href\}/g, "#" + id).replace(/#\{label\}/g, label)),
                 tabContentHtml = tabContent.replace(/#\{stack\}/g, label);
 
@@ -190,16 +170,11 @@
         {% for stack, plugins in stacks.items %}
         addTab("{{ stack }}");
             {% for plugin in plugins %}
-                console.log(tabs.find("#chk--{{ stack }}--{{ plugin }}"));
-            $("#chk--{{ stack }}--{{ plugin }}").prop("checked", true);
+{#            console.log("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}  - " + tabs.find("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}"));#}
+            $("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}").prop("checked", true);
             {% endfor %}
         {% endfor %}
         $(".plugin-sel" ).checkboxradio({icon: false});
-
-
-        function hello(){
-            alert( $("#hel lo").length);
-        }
 
     </script>
 {% endblock %}

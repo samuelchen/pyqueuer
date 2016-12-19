@@ -242,7 +242,7 @@ def plugin(request):
 
     chk_prefix = 'stack'
     rename_prefix = 'rename'
-    spliter = '--'
+    splitter = '♥'
 
     mgr = Plugins
     ucfg = UserConf(user=request.user)
@@ -252,17 +252,17 @@ def plugin(request):
         req_stack = []
         for chk in request.POST:
             print(chk, ' - ', request.POST[chk])
-            if chk.startswith('%s%s' % (chk_prefix, spliter)):
+            if chk.startswith('%s%s' % (chk_prefix, splitter)):
                 req_stack.append(chk)
-            elif chk.startswith('%s%s' % (rename_prefix, spliter)):
-                tmp = chk.split(spliter)
+            elif chk.startswith('%s%s' % (rename_prefix, splitter)):
+                tmp = chk.split(splitter)
                 old_name = tmp[1]
                 new_name = request.POST[chk]
                 if old_name != new_name:
                     req_rename[old_name] = new_name
 
         for chk in req_stack:
-            tmp = chk.split(spliter)
+            tmp = chk.split(splitter)
             stack = tmp[1]
             plug = tmp[2]
             if stack in req_rename:
@@ -284,6 +284,7 @@ def plugin(request):
         stacks[item.stack].append(item.plugin)
 
     context = {
+        "splitter": splitter,
         "plugins": plugins,
         "stacks": stacks,
         "message": msg,
