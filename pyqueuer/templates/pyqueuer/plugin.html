@@ -79,7 +79,7 @@
             if (confirm('*WARNING* Are you sure to delete plugin-stack "' + name + '" ?')) {
                 var panelId = $(this).closest("li").remove().attr("aria-controls");
                 $("#" + panelId).remove();
-                var dels = $("#inp-del-stacks")
+                var dels = $("#inp-del-stacks");
                 dels.val(dels + name + ',');
                 dirty = true;
                 tabs.tabs("refresh");
