@@ -120,7 +120,6 @@ class ConsumerService(Service):
             ucfg.get(GeneralConfKeys.result_store),
             str(datetime.datetime.utcnow())[0:13]
         ]))
-        print(self._save_folder)
         if not os.path.exists(self._save_folder):
             os.makedirs(self._save_folder)
 

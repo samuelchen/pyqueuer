@@ -35,6 +35,10 @@ class PluginBase(object):
         assert value is bool
         self._is_activated = value
 
+    @abc.abstractproperty
+    def is_auto_value(self):
+        pass
+
 
 class MessageAutoUpdater(PluginBase):
     """
@@ -57,6 +61,10 @@ class MessageAutoUpdater(PluginBase):
     def key(self, value):
         self._key = value
 
+    @property
+    def is_auto_value(self):
+        return True
+
 
 class MessageUpdater(PluginBase):
     """
@@ -77,6 +85,10 @@ class MessageUpdater(PluginBase):
     @key.setter
     def key(self, value):
         self._key = value
+
+    @property
+    def is_auto_value(self):
+        return False
 
 
 class PluginFileAnalyzerMathingRegexWithInfoProperty(PluginFileAnalyzerMathingRegex):
@@ -107,7 +119,6 @@ class PluginFileAnalyzerMathingRegexWithInfoProperty(PluginFileAnalyzerMathingRe
                         # print(key, value)
                 if hasattr(mod, 'Name'):
                     value = getattr(mod, 'Name')
-                    print(value, ' - ', re_valid_plugin_name.match(value))
                     if not re_valid_plugin_name.match(value):
                         raise ValueError('"%s" is not valid plugin name. '
                                          ' Only A-Z(a-z), 0-9, "_" and "-" are valid.' % value)

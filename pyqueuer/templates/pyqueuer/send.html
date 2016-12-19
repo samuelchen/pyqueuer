@@ -2,6 +2,14 @@
 
 {% block title %}Send{% endblock %}
 
+{% block head %}
+    <style type="text/css">
+        ul {
+            list-style-type: none;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 
     <form name="form-send" action="" method="post">
@@ -80,32 +88,47 @@
                 </div>
 
                 <!-- overriding plugins -->
-                <div>
-                    <table>
-                         <tr>
-                        <td><input type="checkbox" name="check-uuid" {% if auto_uuid %}checked="true"{% endif %}>auto uuid</td>
-                        <td>(random for each)</td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" name="check-time" {% if auto_time %}checked="true"{% endif %}>auto create_time</td>
-                        <td>(current utc time for each)</td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" name="check-timeout" {% if timeout > 0 %}checked="true"{% endif %}>timeout (seconds)</td>
-                        <td><input type="text" name="timeout" class="ui-widget-content" style="width: 80%;" value="{{ timeout|default_if_none:"3000" }}"></td>
-                    </tr>
-                    <tr>
-                        <td><input type="checkbox" name="check-count" {% if count > 1 %}checked="true" {% endif %}><span>message count:</span></td>
-                        <td><input type="text" name="count" class="ui-widget-content" style="width: 80%;" value="{{ count|default_if_none:1 }}"></td>
-                    </tr>
-                    </table>
+                <div id="tabs-plugin">
+                    <h4>Select plugins to override the message:</h4>
+                    <ul>
+                        {% for stack, plugin_names in stacks.items %}
+                        <li><a href="#tabs-{{ stack }}">{{ stack }}</a></li>
+                        {% endfor %}
+                    </ul>
+                    {% for stack, plugin_names in stacks.items %}
+                    <div id="tabs-{{ stack }}">
+                        <span style="display: none" id="span-{{ stack }}">{% for p in plugin_names %}{{ p }},{% endfor %}</span>
+                        <ul>
+
+                        </ul>
+                    </div>
+                    {% endfor %}
                 </div>
+
+                <!-- hidden plugin input forms -->
+                <ul id="all-plugins" style="display: none">
+                {% for plugin in plugins %}
+                    <li id="form-{{ plugin.name }}">
+                        <label for="chk{{ splitter }}{{ plugin.name }}">{{ plugin.name }}</label>
+                        <input type="checkbox" id="chk{{ splitter }}{{ plugin.name }}"
+                               name="plugin{{ splitter }}{{ plugin.name }}" class="plugin-sel"
+                               {% if request.POST.plugin %}checked="true"{% endif %}>
+                        {% if not plugin.plugin_object.is_auto_value %}
+                        <input type="text" name="pluginv{{ splitter }}{{ plugin.name }}" value="{{ request.POST.plugin }}">
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                </ul>
+
+                <div style="clear:both"><p></p></div>
 
                 <!-- buttons -->
                 <div>
-                    <hr/>
-                    <input class="ui-button" type="submit" name="btn-send-submit" value="send"/>
-                    <input class="ui-button" type="reset" name="btn-send-reset" value="reset"/>
+{#                    <input type="submit" name="btn-submit" value="send"/>#}
+{#                    <input type="reset" name="btn-reset" value="reset"/>#}
+                    <input type="hidden" id="inp-stack" value="" />
+                    <button type="submit">Send</button>
+                    <button type="reset">Reset</button>
                 </div>
 
         </div>
@@ -119,10 +142,13 @@
     $("#accordion-files").accordion();
     $("#tabs-msg").tabs();
     $("#tabs-mq").tabs();
+    $("#tabs-plugin").tabs();
+    $(".plugin-sel").checkboxradio();
+    $("button").button();
 
     // update selected file name
     $("#accordion-files").click(function () {
-        fname = $(".ui-accordion-header[aria-expanded$='true']").text();
+        var fname = $(".ui-accordion-header[aria-expanded$='true']").text();
         $("#msg-file").val(fname);
         $("#msg-file-num").val($("#accordion-files").accordion("option", "active"));
     });
@@ -130,7 +156,7 @@
 
     // message selection source
     $("#tabs-msg").click(function () {
-        src = $("#tabs-msg").find("li[aria-expanded$='true']").text();
+        var src = $("#tabs-msg").find("li[aria-expanded$='true']").text();
         $("#msg-source").val(src);
     });
     if ("{{ msg_source }}" == "data")
@@ -140,13 +166,28 @@
 
     // MQ selection
     $("#tabs-mq").click(function () {
-        src = $("#tabs-mq").find("li[aria-expanded$='true']").text();
+        var src = $("#tabs-mq").find("li[aria-expanded$='true']").text();
         $("#mq").val(src);
     });
     if ("{{ mq }}" == "Kafka")
         $("[href='#tabs-kafka']").trigger("click");
     else
         $("#tabs-mq").click();
+
+
+    // plugin tabs
+    var tabs = $("#tabs-plugin").tabs().on("focus", "li", function() {
+        load_plugins($(this).text());
+    })
+    load_plugins(tabs.find("li a")[0].text);
+
+    function load_plugins(stack) {
+        $("#inp-stack").val(stack);
+        $.each($("#span-"+stack).text().split(","), function(i, obj) {
+            if (!obj) return false;
+            $("#form-"+obj).appendTo($("#tabs-"+stack).find("ul"));
+        });
+    }
 
 </script>
 {% endblock %}

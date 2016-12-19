@@ -5,7 +5,7 @@ from django.shortcuts import render, get_list_or_404, get_object_or_404
 from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponseNotFound
+from django.http import JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
 from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys
 from .models import PluginStackModel
 from .utils import PropertyDict
@@ -14,9 +14,11 @@ from .service import ServiceUtils
 from .plugin import Plugins
 import os
 import pathlib
+from collections import OrderedDict
 
 import logging
 log = logging.getLogger(__name__)
+html_tag_splitter = '♥'
 
 
 def t(template):
@@ -90,6 +92,8 @@ def send(request):
     message = None
     error = None
 
+    plugins = Plugins.all()
+
     ucfg = UserConf(user=request.user)
     queue = ucfg.get(RabbitConfKeys.queue_out)
     exchange = ucfg.get(RabbitConfKeys.topic_out)
@@ -115,11 +119,12 @@ def send(request):
                     msg = f.read()
 
             # overriding plugins
-            is_plugin_enabled = False
-            count = 'check-count' in request.POST and int(request.POST['count']) or 1
-            auto_uuid = 'check-uuid' in request.POST and True or False
-            auto_time = 'check-time' in request.POST and True or False
-            timeout = 'check-timeout' in request.POST and int(request.POST['timeout']) or -1
+            stack = request.POST['inp-stack'] if 'inp-stack' in request.POST else ''
+            applied_plugins = []
+            for req in request.POST:
+                if req.startswith('plugin'+html_tag_splitter):
+                    tmp = req.split(html_tag_splitter)
+                    applied_plugins.append(tmp[1])
 
             # selected MQ
             mq = request.POST['mq']
@@ -134,9 +139,15 @@ def send(request):
 
             conf = get_confs(user=request.user, mq_type=mq)
             client = create_client(mq_type=mq, conf=conf)
-            if is_plugin_enabled:
+            if applied_plugins:
                 # process plugins to override msg
-                # process_plugin('plugin', msg)
+                for plugin in plugins:
+                    if plugin.name in applied_plugins:
+                        if plugin.plugin_object.is_auto_value:
+                            msg = plugin.plugin_object.update(msg)
+                        else:
+                            val = request.POST['pluginv%s%s' % (html_tag_splitter, plugin.name)]
+                            msg = plugin.plugin_object.update(msg, val)
                 pass
             client.send(msg, queue)
             message = 'Message sent.'
@@ -158,9 +169,18 @@ def send(request):
             except Exception as err:
                 log.exception(err)
 
+    stacks = OrderedDict()
+    for item in PluginStackModel.objects.filter(user=request.user).order_by('stack', 'plugin'):
+        if item.stack not in stacks:
+            stacks[item.stack] = []
+        stacks[item.stack].append(item.plugin)
+
     context = {
         "MQTypes": MQTypes,
         "files": files,
+        "plugins": plugins,
+        "stacks": stacks,
+        "splitter": html_tag_splitter,
         "message": message,
         "error": error,
     }
@@ -238,31 +258,43 @@ def output(request):
 def plugin(request):
     msg = None
     error = None
-    stacks = {}
+    stacks = OrderedDict()
 
     chk_prefix = 'stack'
     rename_prefix = 'rename'
-    splitter = '♥'
 
-    mgr = Plugins
     ucfg = UserConf(user=request.user)
 
     if request.method == 'POST':
         req_rename = {}
         req_stack = []
-        for chk in request.POST:
-            print(chk, ' - ', request.POST[chk])
-            if chk.startswith('%s%s' % (chk_prefix, splitter)):
-                req_stack.append(chk)
-            elif chk.startswith('%s%s' % (rename_prefix, splitter)):
-                tmp = chk.split(splitter)
+        req_del = []
+
+        # deleted stacks
+        if 'del-stacks' in request.POST:
+            req_del = request.POST['del-stacks'].split(',')
+            for req in req_del:
+                if req:
+                    log.info('Plugin-stack "%s" is deleted.' % req)
+                    PluginStackModel.objects.filter(user=request.user, stack=req).delete()
+
+        for req in request.POST:
+            # print(req, ' - ', request.POST[req])
+
+            # all stacks with their enabled plugins
+            if req.startswith('%s%s' % (chk_prefix, html_tag_splitter)):
+                req_stack.append(req)
+            # all renamed stacks
+            elif req.startswith('%s%s' % (rename_prefix, html_tag_splitter)):
+                tmp = req.split(html_tag_splitter)
                 old_name = tmp[1]
-                new_name = request.POST[chk]
+                new_name = request.POST[req]
                 if old_name != new_name:
                     req_rename[old_name] = new_name
 
-        for chk in req_stack:
-            tmp = chk.split(splitter)
+        # update stacks with plugins (renamed as new)
+        for req in req_stack:
+            tmp = req.split(html_tag_splitter)
             stack = tmp[1]
             plug = tmp[2]
             if stack in req_rename:
@@ -273,18 +305,19 @@ def plugin(request):
                 obj.save()
                 log.debug('Plugin-stack "%s" added plugin "%s"' % (stack, plug))
 
+        # rename stacks (just remove old-names, new-names are updated above)
         for old_name, new_name in req_rename.items():
             log.info('Plugin-stack "%s" renamed to "%s"' % (old_name, new_name))
             PluginStackModel.objects.filter(user=request.user, stack=old_name).delete()
 
-    plugins = mgr.all()
+    plugins = Plugins.all()
     for item in PluginStackModel.objects.filter(user=request.user).order_by('stack', 'plugin'):
         if item.stack not in stacks:
             stacks[item.stack] = []
         stacks[item.stack].append(item.plugin)
 
     context = {
-        "splitter": splitter,
+        "splitter": html_tag_splitter,
         "plugins": plugins,
         "stacks": stacks,
         "message": msg,

@@ -8,10 +8,6 @@
             list-style-type: none;
         }
 
-        #source-list li span {
-            padding-right: 20px;
-        }
-
         #tabs-stack li .ui-icon-close {
             float: left;
             margin: 0.4em 0.2em 0 0;
@@ -44,7 +40,8 @@
 
             <div>
                 <input class="ui-button" type="button" id="btn-add" name="btn-add" value="Add a stack"/>
-                <input class="ui-button" type="submit" name="btn-submit" value="Save"/>
+                <input class="ui-button" type="submit" id="btn-submit" value="Save"/>
+                <input type="hidden" id="inp-del-stacks" name="del-stacks" />
             </div>
         </form>
 
@@ -55,8 +52,9 @@
 {% block script %}
     <script language="javascript">
 
-        // tabs
         var dirty = false;
+
+        // tabs
         var splitter = "{{ splitter }}";
         var tabs = $("#tabs-stack").tabs();
         var tabTemplate = "<li>" +
@@ -81,6 +79,8 @@
             if (confirm('*WARNING* Are you sure to delete plugin-stack "' + name + '" ?')) {
                 var panelId = $(this).closest("li").remove().attr("aria-controls");
                 $("#" + panelId).remove();
+                var dels = $("#inp-del-stacks")
+                dels.val(dels + name + ',');
                 dirty = true;
                 tabs.tabs("refresh");
             }
@@ -152,9 +152,7 @@
             // plugin checkbox styles
             $(".plugin-sel").checkboxradio({
                 icon: false
-            });
-
-            $(".plugin-sel").on("change", function(event) {
+            }).on("change", function(event) {
                 dirty = true;
             });
         }
@@ -167,9 +165,9 @@
         });
 
         // add existed stacks
-        {% for stack, plugins in stacks.items %}
+        {% for stack, plugin_names in stacks.items %}
             addTab("{{ stack }}");
-            {% for plugin in plugins %}
+            {% for plugin in plugin_names %}
                 {#            console.log("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}  - " + tabs.find("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}"));#}
                 $("#chk{{ splitter }}{{ stack }}{{ splitter }}{{ plugin }}").prop("checked", true);
             {% endfor %}
@@ -178,6 +176,10 @@
 
         $(window).bind('beforeunload', function (event) {
             if (dirty) return 'You have unsaved changes.';
+        });
+
+        $("#btn-submit").on("click", function() {
+            $(window).unbind("beforeunload");
         });
 
     </script>
