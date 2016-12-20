@@ -13,6 +13,8 @@ import importlib
 from yapsy.PluginManager import PluginManager
 from yapsy.PluginFileLocator import PluginFileAnalyzerMathingRegex
 import re
+from collections import OrderedDict
+from .utils import PropertyDict
 
 re_valid_plugin_name = re.compile(r'^[a-zA-Z0-9_\-]+$')
 
@@ -32,7 +34,7 @@ class PluginBase(object):
 
     @is_activated.setter
     def is_activated(self, value):
-        assert value is bool
+        assert isinstance(value, bool)
         self._is_activated = value
 
     @abc.abstractproperty
@@ -160,6 +162,23 @@ class Plugins(object):
             return mgr.getPluginsOfCategory(category)
         else:
             return mgr.getAllPlugins()
+
+    @classmethod
+    def all_metas(cls, category=None):
+        plugins = OrderedDict()
+        for plugin in cls.all(category=category):
+            plugins[plugin.name] = PropertyDict({
+                "name": plugin.name,
+                "author": plugin.author,
+                "version": plugin.version,
+                "description": plugin.description,
+                "plugin_object": plugin.plugin_object,
+
+                "checked": False,
+                "key": plugin.plugin_object.key,
+                "value": None,
+            })
+        return plugins
 
 
 __all__ = [

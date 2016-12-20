@@ -34,15 +34,16 @@
                         </div>
                     {% endfor %}
                 </div>
-                <input id="msg-file" name="msg-file" type="hidden" value="{{ msg_file }}">
-                <input id="msg-file-num" name="msg-file-num" type="hidden" value="{{ msg_file_num }}">
+                <input id="msg-file" name="msg-file" type="hidden" value="{{ msg_file }}"/>
+                <input id="msg-file-idx" name="msg-file-idx" type="hidden" value="{{ msg_file_idx }}"/>
             </div>
             <div id="tabs-data">
                 <p>Enter your message:</p>
                 <textarea id="msg-data" name="msg-data" rows="15" style="width: 100%;"
                           class="ui-widget-content">{{ msg_data }}</textarea>
             </div>
-            <input id="msg-source" name="msg-source" type="hidden" value="{{ msg_source }}">
+            <input id="msg-source" name="msg-source" type="hidden" value="{{ msg_source }}"/>
+            <input id="msg-source-idx" name="msg-source-idx" type="hidden" value="{{ msg_source_idx }}"/>
         </div>
 
 
@@ -85,6 +86,7 @@
                         <p>Kafka is not supported yet.</p>
                     </div>
                     <input id="mq" name="mq" type="hidden" value="{{ mq }}">
+                    <input id="mq-idx" name="mq-idx" type="hidden" value="{{ mq_idx }}">
                 </div>
 
                 <!-- overriding plugins -->
@@ -103,18 +105,20 @@
                         </ul>
                     </div>
                     {% endfor %}
+                    <input type="hidden" id="stack" name="stack" value="{{ stack }}" />
+                    <input type="hidden" id="stack-idx" name="stack-idx" value="{{ stack_idx }}" />
                 </div>
 
                 <!-- hidden plugin input forms -->
                 <ul id="all-plugins" style="display: none">
-                {% for plugin in plugins %}
+                {% for plugin in plugins.values %}
                     <li id="form-{{ plugin.name }}">
                         <label for="chk{{ splitter }}{{ plugin.name }}">{{ plugin.name }}</label>
                         <input type="checkbox" id="chk{{ splitter }}{{ plugin.name }}"
                                name="plugin{{ splitter }}{{ plugin.name }}" class="plugin-sel"
-                               {% if request.POST.plugin %}checked="true"{% endif %}>
+                               {% if plugin.checked %}checked="true"{% endif %}>
                         {% if not plugin.plugin_object.is_auto_value %}
-                        <input type="text" name="pluginv{{ splitter }}{{ plugin.name }}" value="{{ request.POST.plugin }}">
+                        <input type="text" name="pluginv{{ splitter }}{{ plugin.name }}" value="{{ plugin.value |default:''}}">
                         {% endif %}
                     </li>
                 {% endfor %}
@@ -124,9 +128,6 @@
 
                 <!-- buttons -->
                 <div>
-{#                    <input type="submit" name="btn-submit" value="send"/>#}
-{#                    <input type="reset" name="btn-reset" value="reset"/>#}
-                    <input type="hidden" id="inp-stack" value="" />
                     <button type="submit">Send</button>
                     <button type="reset">Reset</button>
                 </div>
@@ -139,54 +140,109 @@
 
 {% block script %}
 <script language="JavaScript">
-    $("#accordion-files").accordion();
-    $("#tabs-msg").tabs();
-    $("#tabs-mq").tabs();
-    $("#tabs-plugin").tabs();
+
+    var msg_src_idx = 0,
+            file_idx = 0,
+            mq_idx = 0,
+            stack_idx = 0;
+
+    // list message files in data_store
+    $("#accordion-files").accordion({
+        activate: function(event, ui) {
+            var fname = ui.newHeader.text();
+            $("#msg-file").val(fname);
+            $("#msg-file-idx").val($(this).accordion("option", "active"));
+        },
+        create: function (event, ui) {
+            $("#msg-file").val("{{ msg_file }}" || ui.header.text());
+        }
+    }).accordion("option", "active", {{ msg_file_idx | default:0 }});
+
+    // select message source (from file or fill data)
+    $("#tabs-msg").tabs({
+        activate: function (event, ui) {
+            $("#msg-source").val(ui.newTab.text());
+            $("#msg-source-idx").val($(this).tabs("option", "active"));
+        },
+        create: function (event, ui) {
+            $("#msg-source").val("{{ msg_source }}" || ui.tab.text());
+        }
+    }).tabs("option", "active", {{ msg_source_idx | default:0 }});
+
+    // MQ selection
+    $("#tabs-mq").tabs({
+        activate: function (event, ui) {
+            $("#mq").val(ui.newTab.text());
+            $("#mq-idx").val($(this).tabs("option", "active"));
+        },
+        create: function(event, ui) {
+            $("#mq").val("{{ mq }}" || ui.tab.text());
+        }
+    }).tabs("option", "active", {{ mq_idx | default:0 }});
+
+    // plugin stack tabs
+    $("#tabs-plugin").tabs({
+        activate: function(event, ui) {
+            load_plugins(ui.newTab.text());
+            $("#stack-idx").val($(this).tabs("option", "active"));
+        },
+        create: function(event, ui) {
+            load_plugins("{{ stack }}" || ui.tab.text());
+        }
+    }).tabs("option", "active", {{ stack_idx | default:0 }});
+
+    $("#form-send").submit(function(event) {
+        alert('haha');
+        if (!validate()) {
+            alert('You must specify value for checked plugins');
+            event.preventDefault();
+        }
+    });
+
+
     $(".plugin-sel").checkboxradio();
     $("button").button();
 
-    // update selected file name
-    $("#accordion-files").click(function () {
-        var fname = $(".ui-accordion-header[aria-expanded$='true']").text();
-        $("#msg-file").val(fname);
-        $("#msg-file-num").val($("#accordion-files").accordion("option", "active"));
-    });
-    $("#accordion-files").accordion("option", "active", {{ msg_file_num | default:0 }});
 
-    // message selection source
-    $("#tabs-msg").click(function () {
-        var src = $("#tabs-msg").find("li[aria-expanded$='true']").text();
-        $("#msg-source").val(src);
-    });
-    if ("{{ msg_source }}" == "data")
-        $("[href='#tabs-data").trigger("click");
-    else
-        $("#tabs-msg").click();
+    // get index of a item in a JQueryUI tabs
+    function index_of_tabs(tabs, tab_text) {
+        var idx = 0;
+        if (tabs && tab_text) {
+            $.each(tabs.find("ul").children(), function(i, ele){
+                console.log(ele.innerText, tab_text);
+                if (ele.innerText == tab_text) {
+                    idx = i;
+                    return false;
+                }
+            });
+        }
+        console.log("index of " + tabs[0].id + " is " + idx + ". (text:" + tab_text + ")");
+        return idx;
+    }
 
-    // MQ selection
-    $("#tabs-mq").click(function () {
-        var src = $("#tabs-mq").find("li[aria-expanded$='true']").text();
-        $("#mq").val(src);
-    });
-    if ("{{ mq }}" == "Kafka")
-        $("[href='#tabs-kafka']").trigger("click");
-    else
-        $("#tabs-mq").click();
-
-
-    // plugin tabs
-    var tabs = $("#tabs-plugin").tabs().on("focus", "li", function() {
-        load_plugins($(this).text());
-    })
-    load_plugins(tabs.find("li a")[0].text);
-
+    // function to display plugin in stack tab
     function load_plugins(stack) {
-        $("#inp-stack").val(stack);
+        $("#stack").val(stack);
         $.each($("#span-"+stack).text().split(","), function(i, obj) {
             if (!obj) return false;
             $("#form-"+obj).appendTo($("#tabs-"+stack).find("ul"));
         });
+    }
+
+    // validations
+    function validate() {
+        {% for plugin in plugins %}
+        {% if not plugin.plugin_object.is_auto_value %}
+        var chk = $("chk{{ splitter }}{{ plugin.name }}");
+        console.log(chk);
+        console.log(chk.prop("checked"));
+        console.log(chk.next());
+        if (chk.prop("checked"))
+            if (!chk.next().val())
+                return false
+        {% endif %}
+        {% endfor %}
+        return true;
     }
 
 </script>

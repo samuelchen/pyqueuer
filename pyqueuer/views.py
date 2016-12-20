@@ -92,42 +92,43 @@ def send(request):
     message = None
     error = None
 
-    plugins = Plugins.all()
+    plugins = Plugins.all_metas()
 
     ucfg = UserConf(user=request.user)
     queue = ucfg.get(RabbitConfKeys.queue_out)
     exchange = ucfg.get(RabbitConfKeys.topic_out)
     key = ucfg.get(RabbitConfKeys.key_out)
-    # outupt = StringIO()
 
     try:
         if request.method == 'POST':
-            # for r in request.POST:
-            #     print(r + ' - ' + request.POST[r])
+            for r in request.POST:
+                print(r + ' - ' + request.POST[r])
 
             # load message string
-            msg_source = request.POST['msg-source'].lower()
+            msg_source = request.POST['msg-source']
+            msg_source_idx = request.POST['msg-source-idx']
             msg_file = request.POST['msg-file']
             msg_data = request.POST['msg-data']
-            msg_file_num = request.POST['msg-file-num']
+            msg_file_idx = request.POST['msg-file-idx']
             msg = ''
-            if msg_source == 'data':
+            if msg_source == 'Data':
                 msg = msg_data
-            elif msg_source == 'file':
+            elif msg_source == 'File':
                 fname = os.path.sep.join([ucfg.get(GeneralConfKeys.data_store), msg_file])
                 with open(fname, 'tr') as f:
                     msg = f.read()
 
             # overriding plugins
-            stack = request.POST['inp-stack'] if 'inp-stack' in request.POST else ''
-            applied_plugins = []
+            stack = request.POST['stack']
+            stack_idx = request.POST['stack-idx']
             for req in request.POST:
                 if req.startswith('plugin'+html_tag_splitter):
                     tmp = req.split(html_tag_splitter)
-                    applied_plugins.append(tmp[1])
+                    plugins[tmp[1]].checked = True
 
             # selected MQ
             mq = request.POST['mq']
+            mq_idx = request.POST['mq-idx']
             if mq == MQTypes.RabbitMQ:
                 queue = request.POST['queue']
                 exchange = request.POST['exchange']
@@ -139,16 +140,18 @@ def send(request):
 
             conf = get_confs(user=request.user, mq_type=mq)
             client = create_client(mq_type=mq, conf=conf)
-            if applied_plugins:
-                # process plugins to override msg
-                for plugin in plugins:
-                    if plugin.name in applied_plugins:
-                        if plugin.plugin_object.is_auto_value:
-                            msg = plugin.plugin_object.update(msg)
-                        else:
-                            val = request.POST['pluginv%s%s' % (html_tag_splitter, plugin.name)]
-                            msg = plugin.plugin_object.update(msg, val)
-                pass
+            # process plugins to override msg
+            for plugin in plugins.values():
+                if plugin.checked:
+                    if plugin.plugin_object.is_auto_value:
+                        msg = plugin.plugin_object.update(msg)
+                    else:
+                        val = request.POST['pluginv%s%s' % (html_tag_splitter, plugin.name)]
+                        if not val:
+                            raise ValueError('You must specify value for plugin "%s"' % plugin.name)
+                        plugin.value = val
+                        msg = plugin.plugin_object.update(msg, val)
+
             client.send(msg, queue)
             message = 'Message sent.'
 
@@ -159,7 +162,7 @@ def send(request):
         log.exception(err)
         error = str(err)
 
-    files = {}
+    files = OrderedDict()
     p = pathlib.Path(ucfg.get(GeneralConfKeys.data_store))
     if p.is_dir():
         for q in p.iterdir():
@@ -168,6 +171,7 @@ def send(request):
                     files[q.name] = f.read(150) + '\n ...'
             except Exception as err:
                 log.exception(err)
+    sorted(files)
 
     stacks = OrderedDict()
     for item in PluginStackModel.objects.filter(user=request.user).order_by('stack', 'plugin'):
