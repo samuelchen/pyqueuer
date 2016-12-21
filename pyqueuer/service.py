@@ -1,23 +1,27 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""
+service modules defines classes to construct a general service.
+TODO: need to be improved.
+"""
+
 import threading
 from abc import ABCMeta
 from collections import deque
 import datetime
 import simplejson as json
 import os
-
 from .models import UserConf, GeneralConfKeys
 
 import logging
+
 log = logging.getLogger(__name__)
 
 
 class OutputBuffer(object):
-
     def __init__(self, maxlen=100):
-        self._queue = deque(maxlen=maxlen)     # keep 100 outputs
+        self._queue = deque(maxlen=maxlen)  # keep 100 outputs
 
     def _write(self, message):
         msg = (message, datetime.datetime.utcnow(), )
@@ -50,7 +54,6 @@ class OutputBuffer(object):
 
 
 class Service(object):
-
     def __init__(self, context, *args, **kwargs):
         self._output = OutputBuffer()
         self._event = threading.Event()
@@ -66,7 +69,7 @@ class Service(object):
             self._name = self._t.getName()
 
     def stop(self):
-        log.debug('Stopping service %s %d ...' % (self.__class__, self.sid) )
+        log.debug('Stopping service %s %d ...' % (self.__class__, self.sid))
         self._event.set()
         self._t.join()
 
@@ -163,7 +166,7 @@ class ConsumerService(Service):
             output.write(msg)
 
         # client = mq.RabbitMQBlockingClient(
-        #     host=models.Setting.get('rabbitmq_host'),
+        # host=models.Setting.get('rabbitmq_host'),
         #     port=int(models.Setting.get('rabbitmq_port')),
         #     user=models.Setting.get('rabbitmq_user'),
         #     password=models.Setting.get('rabbitmq_password'),

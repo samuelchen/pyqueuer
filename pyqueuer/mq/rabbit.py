@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
-__author__ = 'Samuel Chen <samuel.net@gmail.com>'
-__date__ = '10/27/2016 3:14 PM'
 
-'''
-rabbitmq module description
-
-Created on 10/27/2016
-'''
+"""
+RabbitMQ client module
+"""
 
 from .base import MQClient
 from ..models import RabbitConfKeys
@@ -156,7 +152,7 @@ class RabbitMQBlockingClient(MQClient):
         while True:
             method, properties, body = channel.basic_get(queue=queue_name, no_ack=True)
             # if method or properties:
-            #     print(method, properties)
+            # print(method, properties)
             if body:
                 callback(body)
             if stop_event is None or stop_event.isSet():

@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+"""
+views module defines function views for all pages.
+"""
+
+from django.conf import settings
 from django.shortcuts import render, get_list_or_404, get_object_or_404
 from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
@@ -17,16 +22,22 @@ import pathlib
 from collections import OrderedDict
 
 import logging
+
 log = logging.getLogger(__name__)
+
+# used to split a id/name of a html tag.
 html_tag_splitter = '♥'
 
 
+# to render full template path
 def t(template):
     return 'pyqueuer/' + template
 
 
-def test(request):
-    return render(request, t('test.html'))
+# test view for some test purpose
+if __debug__ and settings.DEBUG:
+    def test(request):
+        return render(request, t('test.html'))
 
 
 @require_http_methods(['GET', ])
@@ -122,7 +133,7 @@ def send(request):
             stack = request.POST['stack']
             stack_idx = request.POST['stack-idx']
             for req in request.POST:
-                if req.startswith('plugin'+html_tag_splitter):
+                if req.startswith('plugin' + html_tag_splitter):
                     tmp = req.split(html_tag_splitter)
                     plugins[tmp[1]].checked = True
 
@@ -199,7 +210,6 @@ def consume(request):
     msg = None
     error = None
 
-
     ucfg = UserConf(user=request.user)
     queue = ucfg.get(RabbitConfKeys.queue_in)
     exchange = ucfg.get(RabbitConfKeys.topic_in)
@@ -222,7 +232,8 @@ def consume(request):
 
             count = len(ServiceUtils.consumers)
             if count < max_consumers:
-                svc = ServiceUtils.start_consumer(user=request.user, client=client, key=key, queue=queue, exchange=exchange, autosave=auto_save)
+                svc = ServiceUtils.start_consumer(user=request.user, client=client, key=key, queue=queue,
+                                                  exchange=exchange, autosave=auto_save)
                 if queue:
                     svc.name = 'Queue:%s' % queue
                 elif exchange and key:

@@ -1,10 +1,16 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+"""
+models module defines the Django ORM models.
+this module contains some constants as well.
+"""
+
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from .utils import PropertyDict
-import os
-import simplejson as json
-from collections import namedtuple, OrderedDict
+
 
 # ---------------- Consts ---------------
 # NOTICE: const names must be unique.

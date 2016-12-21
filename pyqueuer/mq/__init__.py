@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
-__author__ = 'Samuel Chen <samuel.net@gmail.com>'
-__date__ = '10/27/2016 3:04 PM'
 
-'''
-__init__.py module description
+"""
+mq modules defines Message Queue clients and some tools.
 
-Created on 10/27/2016
-'''
+"""
+
 from ..utils import PropertyDict
 from .rabbit import RabbitMQBlockingClient
 from ..models import RabbitConfKeys, UserConf
+
 
 MQTypes = PropertyDict(
     RabbitMQ='RabbitMQ',

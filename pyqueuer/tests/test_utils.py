@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
-__author__ = 'Samuel Chen <samuel.net@gmail.com>'
-__date__ = '11/9/2016 8:32 PM'
 
-'''
-test_utils module description
-
-Created on 11/9/2016
-'''
+"""
+Tests for utils
+"""
 
 import unittest
 from pyqueuer.utils import PropertyDict

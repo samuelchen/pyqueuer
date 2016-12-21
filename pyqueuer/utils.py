@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
-__author__ = 'Samuel Chen <samuel.net@gmail.com>'
-__date__ = '10/27/2016 5:37 PM'
 
-'''
-utils module description
+"""
+utils module defines some convenience classes or functions.
 
 Created on 10/27/2016
-'''
+"""
+
 import collections
 import simplejson as json
 import uuid
 import datetime
-import pathlib
 import logging
 log = logging.getLogger(__name__)
 

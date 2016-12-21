@@ -2,7 +2,7 @@
 .tox
 db.sqlite3
 migrations
-plugins
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

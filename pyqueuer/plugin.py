@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
-__author__ = 'Samuel Chen <samuel.net@gmail.com>'
-__date__ = '12/9/2016 2:25 PM'
 
-'''
-plugin module description
+"""
+plugin module defines the base classes for writing plugins.
+This module contains some plugin management classes as well.
 
 Created on 12/9/2016
-'''
+"""
+
 import abc
 import importlib
 from yapsy.PluginManager import PluginManager

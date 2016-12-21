@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
-__author__ = 'Samuel Chen <samuel.net@gmail.com>'
-__date__ = '10/27/2016 3:07 PM'
 
-'''
-Message Queue base module
+"""
+Message Queue base modules
+"""
 
-Created on 10/27/2016
-'''
 import abc
 from ..utils import PropertyDict
 

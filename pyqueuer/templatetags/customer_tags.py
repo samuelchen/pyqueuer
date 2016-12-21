@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
+
+"""
+customer tags for template
+"""
+
 from django.template import Library
 from django.template.defaultfilters import stringfilter
 from django.utils.html import conditional_escape
@@ -19,10 +24,20 @@ def spacify(value, autoescape=None):
 
 @stringfilter
 def _2space(value):
+    """
+    Convert underscores to spaces for a string.
+    :param value:
+    :return:
+    """
     return value.replace('_', ' ')
 
 @stringfilter
 def space2_(value):
+    """
+    Convert spaces to underscores for a string.
+    :param value:
+    :return:
+    """
     return value.replace(' ', '_')
 
 spacify.needs_autoescape = True

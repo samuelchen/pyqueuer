@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
-__author__ = 'Samuel Chen <samuel.net@gmail.com>'
-__date__ = '10/27/2016 3:27 PM'
 
-'''
-test_mq module description
-
-Created on 10/27/2016
-'''
+"""
+Tests for MQ
+"""
 
 import unittest
 from pyqueuer.mq import MQTypes
