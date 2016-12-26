@@ -11,10 +11,10 @@ from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
-from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys
+from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys, KafkaConfKeys
 from .models import PluginStackModel
 from .utils import PropertyDict
-from .mq import create_client, MQTypes, get_confs
+from .mq import MQClientFactory, MQTypes
 from .service import ServiceUtils
 from .plugin import Plugins
 import os
@@ -70,7 +70,7 @@ def setting(request):
         else:
             for options in ConfKeys.values():
                 for value in options.values():
-                    print(value, request.POST[value])
+                    # print(value, request.POST[value])
                     ucfg.set(value, request.POST[value])
             message = 'Setting saved.'
 
@@ -106,14 +106,18 @@ def send(request):
     plugins = Plugins.all_metas()
 
     ucfg = UserConf(user=request.user)
-    queue = ucfg.get(RabbitConfKeys.queue_out)
-    exchange = ucfg.get(RabbitConfKeys.topic_out)
-    key = ucfg.get(RabbitConfKeys.key_out)
+
+    rabbit_1 = ucfg.get(RabbitConfKeys.queue_out)
+    rabbit_2 = ucfg.get(RabbitConfKeys.topic_out)
+    rabbit_3 = ucfg.get(RabbitConfKeys.key_out)
+
+    kafka_1 = ucfg.get(KafkaConfKeys.topic_out)
+    kafka_2 = ''
 
     try:
         if request.method == 'POST':
-            for r in request.POST:
-                print(r + ' - ' + request.POST[r])
+            # for r in request.POST:
+            #     print(r + ' - ' + request.POST[r])
 
             # load message string
             msg_source = request.POST['msg-source']
@@ -140,17 +144,21 @@ def send(request):
             # selected MQ
             mq = request.POST['mq']
             mq_idx = request.POST['mq-idx']
+            params = {}
             if mq == MQTypes.RabbitMQ:
-                queue = request.POST['queue']
-                exchange = request.POST['exchange']
-                key = request.POST['key']
+                params = {
+                    "queue": request.POST['rabbit_1'],     # queue
+                    "topic": request.POST['rabbit_2'],     # topic
+                    "key": request.POST['rabbit_3'],     # key
+                }
             elif mq == MQTypes.Kafka:
-                pass
+                params = {
+                    "topic": request.POST['kafka_1'],     # topic
+                    "key": request.POST['kafka_2'],     # key
+                }
             else:
                 raise Exception('Selected MQ "%s" is not supported' % mq)
 
-            conf = get_confs(user=request.user, mq_type=mq)
-            client = create_client(mq_type=mq, conf=conf)
             # process plugins to override msg
             for plugin in plugins.values():
                 if plugin.checked:
@@ -163,7 +171,10 @@ def send(request):
                         plugin.value = val
                         msg = plugin.plugin_object.update(msg, val)
 
-            client.send(msg, queue)
+            # produce message
+            conf = MQClientFactory.get_confs(mq_type=mq, user=request.user)
+            client = MQClientFactory.create_producer(mq_type=mq, conf=conf)
+            client.produce(msg, **params)
             message = 'Message sent.'
 
     except KeyError as err:
@@ -176,13 +187,12 @@ def send(request):
     files = OrderedDict()
     p = pathlib.Path(ucfg.get(GeneralConfKeys.data_store))
     if p.is_dir():
-        for q in p.iterdir():
+        for q in sorted(p.iterdir()):
             try:
                 with q.open('tr') as f:
                     files[q.name] = f.read(150) + '\n ...'
             except Exception as err:
                 log.exception(err)
-    sorted(files)
 
     stacks = OrderedDict()
     for item in PluginStackModel.objects.filter(user=request.user).order_by('stack', 'plugin'):
@@ -212,7 +222,7 @@ def consume(request):
 
     ucfg = UserConf(user=request.user)
     queue = ucfg.get(RabbitConfKeys.queue_in)
-    exchange = ucfg.get(RabbitConfKeys.topic_in)
+    topic = ucfg.get(RabbitConfKeys.topic_in)
     key = ucfg.get(RabbitConfKeys.key_in)
     max_consumers = 5
 
@@ -223,33 +233,35 @@ def consume(request):
             ServiceUtils.stop_consumer(user=request.user, sid=sid)
         else:
             queue = request.POST['queue']
-            exchange = request.POST['exchange']
+            topic = request.POST['topic']
             key = request.POST['key']
             auto_save = 'check-save' in request.POST and True or False
 
-            conf = get_confs(user=request.user, mq_type=MQTypes.RabbitMQ)
-            client = create_client(mq_type=MQTypes.RabbitMQ, conf=conf)
+            conf = MQClientFactory.get_confs(mq_type=MQTypes.RabbitMQ, user=request.user)
+            client = MQClientFactory.create_consumr(mq_type=MQTypes.RabbitMQ, conf=conf)
 
             count = len(ServiceUtils.consumers)
             if count < max_consumers:
                 svc = ServiceUtils.start_consumer(user=request.user, client=client, key=key, queue=queue,
-                                                  exchange=exchange, autosave=auto_save)
+                                                  exchange=topic, autosave=auto_save)
                 if queue:
                     svc.name = 'Queue:%s' % queue
-                elif exchange and key:
-                    svc.name = 'Exch:%s, Key:%s' % (exchange, key)
+                elif topic and key:
+                    svc.name = 'Exch:%s, Key:%s' % (topic, key)
             else:
                 error = 'You can only start %d consumers' % max
 
     svcs = ServiceUtils.consumers[request.user] if request.user in ServiceUtils.consumers else {}
     context = {
-        "queue": queue,
-        "exchange": exchange,
-        "key": key,
+        # "queue": queue,
+        # "topic": topic,
+        # "key": key,
+        "MQTypes": MQTypes,
         "services": svcs,
         "message": msg,
         "error": error,
     }
+    context.update(locals())
     return render(request, t('consume.html'), context=context)
 
 
@@ -264,8 +276,7 @@ def output(request):
             # print(json.dumps(out))
             # print(len(out))
             return JsonResponse(out, safe=False)
-        else:
-            return HttpResponseNotFound()
+    return HttpResponseNotFound()
 
 
 @login_required

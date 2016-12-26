@@ -13,26 +13,57 @@
         <div>
             <form name="form-consume" action="" method="post">
                 {% csrf_token %}
-                <table>
-                    <tr>
-                        <td><label for="queue">queue (optional):</label></td>
-                        <td><input name="queue" type="text" placeholder="queue name" value="{{ queue }}"></td>
-                        <td><label for="exchange">exchange (optional):</label></td>
-                        <td><input name="exchange" type="text" placeholder="exchange name" value="{{ exchange }}"></td>
-                        <td><label for="key">key (optional):</label></td>
-                        <td><input name="key" type="text" placeholder="binding key (for exchange only)" value="{{ key }}"></td>
-                        <td><input class="ui-button-text" type="submit" name="btn-consume-submit" value="start a new consumer"/></td>
-                        <td><input class="ui-button-text" type="reset" name="btn-consume-reset" value="reset"/></td>
-                    </tr>
-                    <tr>
-                        <td><input name="check-save" type="checkbox" /><label for="save">Auto save results</label></td>
-                    </tr>
-                </table>
+
+
+                <div id="tabs-mq">
+                    <ul>
+                        <li><a href="#tabs-rabbit">{{ MQTypes.RabbitMQ }}</a></li>
+                        <li><a href="#tabs-kafka">{{ MQTypes.Kafka }}</a></li>
+                    </ul>
+                    <div id="tabs-rabbit">
+                        <table style="width: 95%;">
+                            <tr>
+                                <td colspan="2">
+                                    <p>Specify either "queue" or "topic" + "key".</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label for="queue">queue:</label></td>
+                                <td><input name="queue" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="queue name" value="{{ queue }}"></td>
+                            </tr>
+                            <tr>
+                                <td><label for="topic">topic:</label></td>
+                                <td><input name="topic" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="topic name" value="{{ topic }}"></td>
+                            </tr>
+                            <tr>
+                                <td><label for="key">key:</label></td>
+                                <td><input name="key" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="binding key (for topic only)" value="{{ key }}"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div id="tabs-kafka">
+                        <p>Kafka is not supported yet.</p>
+                    </div>
+                    <input id="mq" name="mq" type="hidden" value="{{ mq }}">
+                    <input id="mq-idx" name="mq-idx" type="hidden" value="{{ mq_idx }}">
+                </div>
+
+                <div style="clear:both"><p></p></div>
+
+                <!-- buttons -->
+                <div>
+                    <button type="submit">Start a new consumer</button>
+                    <button type="reset">Reset</button>
+                    <input id="check-save" name="check-save" type="checkbox" /><label for="check-save">Auto save results</label>
+                </div>
             </form>
         </div>
         <hr/>
 
-        <div class="container">
+        <div>
             <table><tr>
             {% for svc in services.values %}
             <td width="200px" valign="top"><table  border="1">
@@ -41,7 +72,9 @@
                     {% csrf_token %}
                     <td width="0">
                         <input type="hidden" name="sid" value="{{ svc.sid }}" />
-                        <input class="ui-icon ui-icon-close" type="submit" title="Close consumer {{ svc.sid }}" name="btn-consume-stop" value="stop this consumer"/>
+                        <button type="submit" title="Close consumer {{ svc.sid }}" name="btn-consume-stop">
+                            <i class="ui-icon ui-icon-close"></i>
+                        </button>
                     </td>
                     <td width="100%">{{ svc.sid }} {{ svc.name }}</td>
                 </form>
@@ -89,6 +122,18 @@
 
 {% block script %}
     <script language="JavaScript">
-        $("#1").append('<p> hello </p>');
+    // MQ selection
+    $("#tabs-mq").tabs({
+        activate: function (event, ui) {
+            $("#mq").val(ui.newTab.text());
+            $("#mq-idx").val($(this).tabs("option", "active"));
+        },
+        create: function(event, ui) {
+            $("#mq").val("{{ mq }}" || ui.tab.text());
+        }
+    }).tabs("option", "active", {{ mq_idx | default:0 }});
+
+    $("button").button();
+    $("input[type='checkbox']").checkboxradio();
     </script>
 {% endblock %}

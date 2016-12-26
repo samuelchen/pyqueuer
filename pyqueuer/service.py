@@ -157,26 +157,19 @@ class ConsumerService(Service):
         def on_msg(msg):
             # print(" [x] [%s] %r" % (str(datetime.datetime.now())[:-3], msg))
             try:
-                msg = json.loads(msg)
+                message = json.loads(msg)
             except:
-                msg = msg.decode('utf-8')
-            log.debug('Received message: "%s"' % msg)
+                message = msg.decode('utf-8')
+            log.debug('Received message: "%s"' % message)
             if self.autosave:
                 self._save_message(msg)
-            output.write(msg)
+            output.write(message)
 
-        # client = mq.RabbitMQBlockingClient(
-        # host=models.Setting.get('rabbitmq_host'),
-        #     port=int(models.Setting.get('rabbitmq_port')),
-        #     user=models.Setting.get('rabbitmq_user'),
-        #     password=models.Setting.get('rabbitmq_password'),
-        #     vhost=models.Setting.get('rabbitmq_vhost')
-        # )
         client = self._ctx['client']
 
         output.write('[*] Waiting for messages.')
 
-        client.connect()
+        client.connection.connect()
 
         if queue:
             output.write('[*] from queue %r' % queue)
@@ -185,10 +178,10 @@ class ConsumerService(Service):
         elif exchange and key:
             output.write('[*] from exchange %r with key %r' % (exchange, key))
             self.name = 'Ex:%s, key:%s' % (exchange, key)
-            client.consume_ex(exchange=exchange, key=key, callback=on_msg, stop_event=stop_event)
+            client.consume(topic=exchange, key=key, callback=on_msg, stop_event=stop_event)
 
         output.write('[*] Consumer quit.')
-        client.disconnect()
+        client.connection.disconnect()
 
     def _save_message(self, msg):
         # obj = json.loads(msg)
@@ -197,7 +190,7 @@ class ConsumerService(Service):
             # sender = obj['sender_name']
             # receiver = obj['receiver_name']
             # uuid = obj['uuid']
-            tm = str(datetime.datetime.utcnow()).replace(':', '').replace('.', ' ')[0:-3]
+            tm = str(datetime.datetime.utcnow()).replace(':', '').replace('.', '_').replace(' ', '_')[0:-3]
             # name = '.'.join([sender, receiver, tm, uuid, 'json'])
             name = '.'.join([tm, 'json'])
             fname = os.path.abspath(os.path.sep.join([self._save_folder, name]))

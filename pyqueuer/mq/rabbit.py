@@ -5,7 +5,7 @@
 RabbitMQ client module
 """
 
-from .base import MQClient
+from .base import IConnect, IProduce, IConsume
 from ..models import RabbitConfKeys
 import pika
 import logging
@@ -14,15 +14,13 @@ from time import sleep
 log = logging.getLogger(__name__)
 
 
-class RabbitMQBlockingClient(MQClient):
+class RabbitMQConnection(IConnect):
     _conn = None
-    _channel_producing = None
-    _channel_consuming = None
 
     _host = None
     _port = None
     _user = None
-    _passwd = None
+    _password = None
     _vhost = None
 
     def init(self, *args, **kwargs):
@@ -31,132 +29,169 @@ class RabbitMQBlockingClient(MQClient):
             self._host = self.config[RabbitConfKeys.host]
             self._port = int(self.config[RabbitConfKeys.port])
             self._user = self.config[RabbitConfKeys.user]
-            self._passwd = self.config[RabbitConfKeys.password]
+            self._password = self.config[RabbitConfKeys.password]
             self._vhost = self.config[RabbitConfKeys.vhost]
         except:
             raise Exception('You must specify the configurations in dict')
 
     def connect(self):
-        count = 0
+        retries = 0
+        interval = 2
         while self._conn is None:
             try:
-                count += 1
-                credentials = pika.PlainCredentials(self._user, self._passwd)
+                retries += 1
+                credentials = pika.PlainCredentials(self._user, self._password)
                 parameters = pika.ConnectionParameters(host=self._host, port=self._port, virtual_host=self._vhost,
                                                        credentials=credentials)
                 self._conn = pika.BlockingConnection(parameters)
             except pika.exceptions.ConnectionClosed:
-                log.warn('Fail connecting RabbitMQ server %s:%s.' % (self._host, self._port))
-                if count >= 3 or not self.auto_reconnect:
+                if retries >= 3 or not self.auto_reconnect:
                     raise
+                else:
+                    log.warn('Fail connecting RabbitMQ server %s:%s. Retry in %d seconds.'
+                             % (self._host, self._port, interval))
+                    sleep(interval)
+                    interval *= 2
 
     def disconnect(self):
-        if self._channel_consuming is not None:
-            self._channel_consuming.close()
-
-        if self._channel_producing is not None:
-            self._channel_producing.close()
-
         if self._conn is not None:
             self._conn.close()
 
-    def reconnect(self):
-        pass
+    def open_channel(self):
+        if self.auto_reconnect and (not self._conn or not self._conn.is_open):
+            self.connect()
+        return self._conn.channel()
 
-    def _get_producing_channel(self):
-        self.connect()
-        if self._channel_producing is None:
-            self._channel_producing = self._conn.channel()
-        return self._channel_producing
 
-    def _get_consuming_channel(self):
-        self.connect()
-        if self._channel_consuming is None:
-            self._channel_consuming = self._conn.channel()
-        return self._channel_consuming
+class RabbitMQProducer(IProduce):
+
+    _channel = None
+
+    # ------------------------
+    # Properties
+    # ------------------------
+    @property
+    def channel(self):
+        if not self._channel:
+            self._channel = self.connection.open_channel()
+        return self._channel
 
     # ------------------------
     # Basic methods
     # ------------------------
 
-    def basic_get(self, queue):
-        pass
-
-    def basic_send(self, message, queue):
-        pass
-
-    def basic_ack(self):
-        pass
+    def basic_send(self, message, **kwargs):
+        raise NotImplementedError
 
     # ------------------------
     # High level methods
     # ------------------------
 
-    def send_ex(self, msg, exchange, key):
+    def produce(self, msg, **kwargs):
+        """
+        Send message with given keyword args.
+        :param msg: Message to be sent.
+        :param kwargs: "queue" or "topic" + "key". If all specified, accept "queue".
+                        "content_type" (optional): Specify content type. Default is "plain/text".
+                        "mode" (optional): Specify delivery mode. Default is 2. (Check Rabbit Doc)
+        :return:
+        """
         log.debug('Sending message "%s"' % msg)
-        channel = self._get_producing_channel()
+        channel = self.channel
 
-        channel.basic_publish(exchange,
-                              key, msg,
-                              pika.BasicProperties(
-                                  content_type='plain/text',
-                                  delivery_mode=2))
+        assert 'queue' in kwargs or ('topic' in kwargs and 'key' in kwargs)
+        queue = kwargs['queue'] if 'queue' in kwargs else None
+        topic = kwargs['topic'] if 'topic' in kwargs else None
+        key = kwargs['key'] if 'key' in kwargs else None
+        content_type = kwargs['content_type'] if 'content_type' in kwargs else 'plain/text'
+        mode = kwargs['mode'] if 'mode' in kwargs else 2
 
-        log.info('Message sent to exchange topic "%s" key "%s".' % exchange, key)
+        if queue:
+            channel.basic_publish('', queue, msg,
+                                  pika.BasicProperties(
+                                      content_type=content_type,
+                                      delivery_mode=mode))
+            log.info('Message sent to queue "%s".' % queue)
+        else:
+            channel.basic_publish(topic,
+                                  key, msg,
+                                  pika.BasicProperties(
+                                      content_type=content_type,
+                                      delivery_mode=mode))
+            log.info('Message sent to exchange topic "%s" key "%s".' % (topic, key))
 
-    def send(self, msg, queue):
-        log.debug('Sending message "%s"' % msg)
-        channel = self._get_producing_channel()
+        channel.close()
 
-        channel.basic_publish('', queue, msg,
-                              pika.BasicProperties(
-                                  content_type='plain/text',
-                                  delivery_mode=2))
-        log.info('Message sent to queue "%s".' % queue)
 
-    def consume_ex(self, exchange, key, callback, stop_event=None):
-        channel = self._get_consuming_channel()
-        channel.exchange_declare(exchange=exchange, type='topic')
-        result = channel.queue_declare(exclusive=True)
-        queue_name = result.method.queue
+class RabbitMQConsumer(IConsume):
 
-        log.debug('consuming exchange queue %s' % queue_name)
+    _channel = None
+    _stop_flag = False
 
-        channel.queue_bind(exchange=exchange,
-                           queue=queue_name,
-                           routing_key=key)
+    # ------------------------
+    # Properties
+    # ------------------------
+    @property
+    def channel(self):
+        if not self._channel:
+            self._channel = self.connection.open_channel()
+        return self._channel
 
-        while True:
-            method, properties, body = channel.basic_get(queue=queue_name, no_ack=True)
-            if body:
-                callback(body)
-            if stop_event is None or stop_event.isSet():
-                break
-            sleep(1)
+    # ------------------------
+    # Basic methods
+    # ------------------------
 
-    def consume(self, queue, callback, stop_event=None, exchange=None, key=None):
-        channel = self._get_consuming_channel()
+    def basic_get(self, **kwargs):
+        raise NotImplementedError
 
+    def basic_ack(self, **kwargs):
+        raise NotImplementedError
+
+    # ------------------------
+    # High level methods
+    # ------------------------
+
+    def consume(self, **kwargs):
+        """
+        :param kwargs: "queue" or "topic" + "key". If all specified, accept "queue".
+                        "callback" (optional): Callback function accepts argument "body" to process message body.
+                        "stop_event" (optional): Instance of threading.Event() for stopping consuming external.
+                                        If None, consume once.
+        :return:
+        """
+        assert 'queue' in kwargs or ('topic' in kwargs and 'key' in kwargs)
+        self._stop_flag = False
+        queue = kwargs['queue'] if 'queue' in kwargs else None
+        topic = kwargs['topic'] if 'topic' in kwargs else None
+        key = kwargs['key'] if 'key' in kwargs else None
+        callback = kwargs['callback'] if 'callback' in kwargs else lambda x: log.debug('Received message:  %s' % x)
+        stop_event = kwargs['stop_event'] if 'stop_event' in kwargs else None
+
+        channel = self.channel
         queue_name = queue
-        if exchange is not None:
-            channel.exchange_declare(exchange=exchange, type='topic')
-        channel.queue_declare(queue=queue_name, durable=True)
-
-        log.debug('consuming queue %s' % queue_name)
-
-        if exchange is not None:
-            channel.queue_bind(exchange=exchange,
+        if queue:
+            channel.queue_declare(queue=queue_name, durable=True)
+            log.debug('consuming queue %s' % queue_name)
+        else:
+            channel.exchange_declare(exchange=topic, type='topic')
+            result = channel.queue_declare(exclusive=True)
+            queue_name = result.method.queue
+            channel.queue_bind(exchange=topic,
                                queue=queue_name,
                                routing_key=key)
+            log.debug('consuming exchange (topic "%s" key "%s") queue %s' % (topic, key, queue_name))
 
         while True:
             method, properties, body = channel.basic_get(queue=queue_name, no_ack=True)
-            # if method or properties:
-            # print(method, properties)
             if body:
                 callback(body)
             if stop_event is None or stop_event.isSet():
                 break
-            # print('consuming...')
             sleep(1)
 
+    def stop(self):
+        """
+        Stop consuming
+        :return:
+        """
+        self._stop_flag = True

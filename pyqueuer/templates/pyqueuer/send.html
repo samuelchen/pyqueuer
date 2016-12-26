@@ -59,31 +59,44 @@
                         <table style="width: 95%;">
                             <tr>
                                 <td colspan="2">
-                                    <p>Specify either "queue" or "exchange" + "key".</p>
-
-                                    <p>Select a file (click left list) or enter your data.</p>
-                                    <hr>
+                                    <p>Specify either "queue" or "topic" + "key".</p>
                                 </td>
                             </tr>
                             <tr>
-                                <td><label for="queue">queue:</label></td>
-                                <td><input name="queue" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="queue name" value="{{ queue }}"></td>
+                                <td><label for="rabbit_1">queue:</label></td>
+                                <td><input name="rabbit_1" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="queue name" value="{{ rabbit_1 }}"></td>
                             </tr>
                             <tr>
-                                <td><label for="exchange">exchange:</label></td>
-                                <td><input name="exchange" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="exchange name" value="{{ exchange }}"></td>
+                                <td><label for="rabbit_2">topic:</label></td>
+                                <td><input name="rabbit_2" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="topic name" value="{{ rabbit_2 }}"></td>
                             </tr>
                             <tr>
-                                <td><label for="key">key:</label></td>
-                                <td><input name="key" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="binding key (for exchange only)" value="{{ key }}"></td>
+                                <td><label for="rabbit_3">key:</label></td>
+                                <td><input name="rabbit_3" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="binding key (for topic only)" value="{{ rabbit_3 }}"></td>
                             </tr>
                         </table>
                     </div>
                     <div id="tabs-kafka">
-                        <p>Kafka is not supported yet.</p>
+                        <table style="width: 95%;">
+                            <tr>
+                                <td colspan="2">
+                                    <p>Specify "topic".</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><label for="kafka_1">topic:</label></td>
+                                <td><input name="kafka_1" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="topic name" value="{{ kafka_1 }}"></td>
+                            </tr>
+                            <tr>
+                                <td><label for="kafka_2">key (optional):</label></td>
+                                <td><input name="kafka_2" type="text" style="width: 80%;" class="ui-widget-content"
+                                           placeholder="key (for hashed partitioning )" value="{{ kafka_2 }}"></td>
+                            </tr>
+                        </table>
                     </div>
                     <input id="mq" name="mq" type="hidden" value="{{ mq }}">
                     <input id="mq-idx" name="mq-idx" type="hidden" value="{{ mq_idx }}">

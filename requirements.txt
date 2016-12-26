@@ -3,3 +3,4 @@ simplejson
 configparser
 pika
 yapsy
+kafka-python

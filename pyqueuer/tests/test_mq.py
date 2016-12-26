@@ -29,7 +29,7 @@ class TestRabbitMQ(unittest.TestCase):
 
     # def test_send(self):
     #     msg = 'my first message.'
-    #     self.mq.send(msg)
+    #     self.mq.produce(msg)
     #     self.assertEqual(True, True)
 
 

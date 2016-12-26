@@ -7,8 +7,9 @@ mq modules defines Message Queue clients and some tools.
 """
 
 from ..utils import PropertyDict
-from .rabbit import RabbitMQBlockingClient
-from ..models import RabbitConfKeys, UserConf
+from .rabbit import RabbitMQConnection, RabbitMQConsumer, RabbitMQProducer
+from .kafka import KafkaConnection, KafkaProducer, KafkaConsumer
+from ..models import UserConf, RabbitConfKeys, KafkaConfKeys
 
 
 MQTypes = PropertyDict(
@@ -17,35 +18,104 @@ MQTypes = PropertyDict(
 )
 
 
-def create_client(mq_type, conf):
-    """
-    A factory for MQ client
-    :param mq_type: Message queue type from MQTypes
-    :param conf: The configuration dict
-    :return:
-    """
-    if mq_type == MQTypes.RabbitMQ:
-        return RabbitMQBlockingClient(conf)
-    else:
-        raise RuntimeError('Unsupported MQ type')
+class MQClientFactory():
 
+    def __init__(self, mq_type):
+        self._mq_type = mq_type
+        if mq_type not in MQTypes.values:
+            raise RuntimeError('Unsupported MQ type "%s"' % mq_type)
 
-def get_confs(user, mq_type):
-    """
-    Retrieve mq configurations of a user
-    :param user:
-    :param mq_type:
-    :return: PropertyDict
-    """
-    ucfg = UserConf(user=user)
-    confs = PropertyDict.fromkeys(RabbitConfKeys.values())
-    for value in RabbitConfKeys.values():
-        confs[value] = ucfg.get(value)
-    return confs
+    @staticmethod
+    def create_connection(mq_type, conf):
+        """
+        A factory for MQ Connection
+        :param mq_type: Message queue type from MQTypes
+        :param conf: The configuration dict
+        :return:
+        """
+        conn = None
+        if mq_type == MQTypes.RabbitMQ:
+            conn = RabbitMQConnection(conf)
+        elif mq_type == MQTypes.Kafka:
+            conn = KafkaConnection(conf)
+        else:
+            raise RuntimeError('Unsupported MQ type "%s"' % mq_type)
+
+        # assign methods
+        conn.mq_type = mq_type
+        conn.create_producer = MQClientFactory.__create_producer
+        conn.create_consumer = MQClientFactory.__create_consumer
+        return conn
+
+    @staticmethod
+    def create_producer(mq_type, conf):
+        """
+        Create a MQ producer instance.
+        :param mq_type:
+        :param conf:
+        :return:
+        """
+        conn = MQClientFactory.create_connection(mq_type, conf)
+        producer = conn.create_producer(conn)
+        return producer
+
+    @staticmethod
+    def create_consumr(mq_type, conf):
+        """
+        Create a MQ consumer instance.
+        :param mq_type:
+        :param conf:
+        :return:
+        """
+        conn = MQClientFactory.create_connection(mq_type, conf)
+        producer = conn.create_consumer(conn)
+        return producer
+
+    @staticmethod
+    def __create_producer(conn):
+        mq_type = conn.mq_type
+        if mq_type == MQTypes.RabbitMQ:
+            return RabbitMQProducer(conn)
+        elif mq_type == MQTypes.Kafka:
+            return KafkaProducer(conn)
+        else:
+            raise RuntimeError('Unsupported MQ type "%s"' % mq_type)
+
+    @staticmethod
+    def __create_consumer(conn):
+        mq_type = conn.mq_type
+        if mq_type == MQTypes.RabbitMQ:
+            return RabbitMQConsumer(conn)
+        elif mq_type == MQTypes.Kafka:
+            return KafkaConsumer(conn)
+        else:
+            raise RuntimeError('Unsupported MQ type "%s"' % mq_type)
+
+    @staticmethod
+    def get_confs(mq_type, user):
+        """
+        Retrieve mq configurations of a user based on MQ type
+        :param mq_type:
+        :param user:
+        :return: PropertyDict
+        """
+        ucfg = UserConf(user=user)
+
+        conf_keys = None
+        if mq_type == MQTypes.RabbitMQ:
+            conf_keys = RabbitConfKeys
+        elif mq_type == MQTypes.Kafka:
+            conf_keys = KafkaConfKeys
+        else:
+            raise RuntimeError('Unsupported MQ type "%s"' % mq_type)
+
+        confs = PropertyDict.fromkeys(conf_keys.values())
+        for value in conf_keys.values():
+            confs[value] = ucfg.get(value)
+        return confs
 
 
 __all__ = [
     MQTypes,
-    create_client,
-    get_confs,
+    MQClientFactory,
 ]
