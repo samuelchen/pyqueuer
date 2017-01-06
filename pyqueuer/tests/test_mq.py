@@ -8,7 +8,7 @@ Tests for MQ
 import unittest
 from pyqueuer.mq import MQTypes
 from pyqueuer.mq.rabbit import RabbitConfKeys
-from pyqueuer.mq import create_client
+from pyqueuer.mq import MQClientFactory
 from .conf import conf_rabbit
 
 
@@ -21,16 +21,17 @@ class TestRabbitMQ(unittest.TestCase):
             RabbitConfKeys.password: conf_rabbit.password,
             RabbitConfKeys.vhost: conf_rabbit.vhost,
         }
-        self.mq = create_client(MQTypes.RabbitMQ, conf)
+        self.mq = MQClientFactory.create_connection(MQTypes.RabbitMQ, conf)
         self.mq.connect()
 
     def tearDown(self):
         self.mq.disconnect()
 
-    # def test_send(self):
-    #     msg = 'my first message.'
-    #     self.mq.produce(msg)
-    #     self.assertEqual(True, True)
+    def test_send(self):
+        msg = 'my first message.'
+        producer = self.mq.create_sender()
+        producer.produce(msg)
+        self.assertEqual(True, True)
 
 
 class KafkaTestCase(unittest.TestCase):

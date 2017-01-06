@@ -15,7 +15,7 @@ from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys, KafkaCo
 from .models import PluginStackModel
 from .utils import PropertyDict
 from .mq import MQClientFactory, MQTypes
-from .service import ServiceUtils
+from .service import ServiceManager, MQConsumerService
 from .plugin import Plugins
 import os
 import pathlib
@@ -219,43 +219,48 @@ def send(request):
 def consume(request):
     msg = None
     error = None
+    max_consumers = 5
 
     ucfg = UserConf(user=request.user)
-    queue = ucfg.get(RabbitConfKeys.queue_in)
-    topic = ucfg.get(RabbitConfKeys.topic_in)
-    key = ucfg.get(RabbitConfKeys.key_in)
-    max_consumers = 5
+
+    rabbit_1 = ucfg.get(RabbitConfKeys.queue_in)
+    rabbit_2 = ucfg.get(RabbitConfKeys.topic_in)
+    rabbit_3 = ucfg.get(RabbitConfKeys.key_in)
+
+    kafka_1 = ucfg.get(KafkaConfKeys.topic_in)
+    kafka_2 = ''
 
     if request.method == 'POST':
 
         if 'sid' in request.POST:
+            # close consumer
             sid = int(request.POST['sid'])
-            ServiceUtils.stop_consumer(user=request.user, sid=sid)
+            ServiceManager.private(user=request.user).stop(sid=sid)
         else:
-            queue = request.POST['queue']
-            topic = request.POST['topic']
-            key = request.POST['key']
+
+            # selected MQ
+            mq, mq_idx, params = _handle_mq_tabs_request(request)
+
+            # other configs
             auto_save = 'check-save' in request.POST and True or False
 
+            # client
             conf = MQClientFactory.get_confs(mq_type=MQTypes.RabbitMQ, user=request.user)
             client = MQClientFactory.create_consumr(mq_type=MQTypes.RabbitMQ, conf=conf)
 
-            count = len(ServiceUtils.consumers)
+            svc_mgr = ServiceManager.private(user=request.user)
+            count = len(svc_mgr.all())
             if count < max_consumers:
-                svc = ServiceUtils.start_consumer(user=request.user, client=client, key=key, queue=queue,
-                                                  exchange=topic, autosave=auto_save)
-                if queue:
-                    svc.name = 'Queue:%s' % queue
-                elif topic and key:
-                    svc.name = 'Exch:%s, Key:%s' % (topic, key)
-            else:
-                error = 'You can only start %d consumers' % max
+                conf = MQClientFactory.get_confs(mq_type=mq, user=request.user)
+                consumer = MQClientFactory.create_consumr(mq_type=mq, conf=conf)
+                service = MQConsumerService(consumer=consumer)
+                svc = svc_mgr.start(service, autosave=auto_save, **params)
 
-    svcs = ServiceUtils.consumers[request.user] if request.user in ServiceUtils.consumers else {}
+            else:
+                error = 'You can only start %d consumers' % max_consumers
+
+    svcs = ServiceManager.private(user=request.user).all()
     context = {
-        # "queue": queue,
-        # "topic": topic,
-        # "key": key,
         "MQTypes": MQTypes,
         "services": svcs,
         "message": msg,
@@ -268,10 +273,12 @@ def consume(request):
 @login_required
 @require_http_methods(['GET', ])
 def output(request):
-    if request.user in ServiceUtils.consumers:
+    svcs = ServiceManager.private(user=request.user).all()
+    # print('services:', svcs)
+    if svcs:
         sid = int(request.GET['sid']) if 'sid' in request.GET else None
-        if sid in ServiceUtils.consumers[request.user]:
-            svc = ServiceUtils.consumers[request.user][sid]
+        if sid in svcs:
+            svc = svcs[sid]
             out = svc.flush_output()
             # print(json.dumps(out))
             # print(len(out))
@@ -350,3 +357,33 @@ def plugin(request):
         "error": error,
     }
     return render(request, t('plugin.html'), context=context)
+
+
+# --- convenience functions ---
+
+def _handle_mq_tabs_request(request):
+    """
+    Handle the POST request for MQ selection tabs.
+    The HTML codes should be generated from "pyqueuer/includes/mq-sel-tab.html". (Django include)
+    Will handle selected MQ name, selected MQ tab index and all posted fields depends on selected MQ.
+    :param request: Django request object.
+    :return: tuple of ("Selected MQ Name", "Tab Index of selected MQ", "Fields Dict of selected MQ")
+    """
+    mq = request.POST['mq']
+    mq_idx = request.POST['mq-idx']
+    params = {}
+    if mq == MQTypes.RabbitMQ:
+        params = {
+            "queue": request.POST['rabbit_1'],     # queue
+            "topic": request.POST['rabbit_2'],     # topic
+            "key": request.POST['rabbit_3'],     # key
+        }
+    elif mq == MQTypes.Kafka:
+        params = {
+            "topic": request.POST['kafka_1'],     # topic
+            "key": request.POST['kafka_2'],     # key
+        }
+    else:
+        raise Exception('Selected MQ "%s" is not supported' % mq)
+
+    return mq, mq_idx, params

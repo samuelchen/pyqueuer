@@ -14,42 +14,42 @@
             <form name="form-consume" action="" method="post">
                 {% csrf_token %}
 
-
-                <div id="tabs-mq">
-                    <ul>
-                        <li><a href="#tabs-rabbit">{{ MQTypes.RabbitMQ }}</a></li>
-                        <li><a href="#tabs-kafka">{{ MQTypes.Kafka }}</a></li>
-                    </ul>
-                    <div id="tabs-rabbit">
-                        <table style="width: 95%;">
-                            <tr>
-                                <td colspan="2">
-                                    <p>Specify either "queue" or "topic" + "key".</p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><label for="queue">queue:</label></td>
-                                <td><input name="queue" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="queue name" value="{{ queue }}"></td>
-                            </tr>
-                            <tr>
-                                <td><label for="topic">topic:</label></td>
-                                <td><input name="topic" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="topic name" value="{{ topic }}"></td>
-                            </tr>
-                            <tr>
-                                <td><label for="key">key:</label></td>
-                                <td><input name="key" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="binding key (for topic only)" value="{{ key }}"></td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div id="tabs-kafka">
-                        <p>Kafka is not supported yet.</p>
-                    </div>
-                    <input id="mq" name="mq" type="hidden" value="{{ mq }}">
-                    <input id="mq-idx" name="mq-idx" type="hidden" value="{{ mq_idx }}">
-                </div>
+                {% include "pyqueuer/includes/mq-sel-tab.html" %}
+{#                <div id="tabs-mq">#}
+{#                    <ul>#}
+{#                        <li><a href="#tabs-rabbit">{{ MQTypes.RabbitMQ }}</a></li>#}
+{#                        <li><a href="#tabs-kafka">{{ MQTypes.Kafka }}</a></li>#}
+{#                    </ul>#}
+{#                    <div id="tabs-rabbit">#}
+{#                        <table style="width: 95%;">#}
+{#                            <tr>#}
+{#                                <td colspan="2">#}
+{#                                    <p>Specify either "queue" or "topic" + "key".</p>#}
+{#                                </td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="queue">queue:</label></td>#}
+{#                                <td><input name="queue" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="queue name" value="{{ queue }}"></td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="topic">topic:</label></td>#}
+{#                                <td><input name="topic" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="topic name" value="{{ topic }}"></td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="key">key:</label></td>#}
+{#                                <td><input name="key" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="binding key (for topic only)" value="{{ key }}"></td>#}
+{#                            </tr>#}
+{#                        </table>#}
+{#                    </div>#}
+{#                    <div id="tabs-kafka">#}
+{#                        <p>Kafka is not supported yet.</p>#}
+{#                    </div>#}
+{#                    <input id="mq" name="mq" type="hidden" value="{{ mq }}">#}
+{#                    <input id="mq-idx" name="mq-idx" type="hidden" value="{{ mq_idx }}">#}
+{#                </div>#}
 
                 <div style="clear:both"><p></p></div>
 

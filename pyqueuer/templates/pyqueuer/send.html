@@ -49,58 +49,59 @@
 
         <div class="container content" xmlns="http://www.w3.org/1999/html">
 
+            {% include "pyqueuer/includes/mq-sel-tab.html" %}
                 <!-- MQ selections & configs -->
-                <div id="tabs-mq">
-                    <ul>
-                        <li><a href="#tabs-rabbit">{{ MQTypes.RabbitMQ }}</a></li>
-                        <li><a href="#tabs-kafka">{{ MQTypes.Kafka }}</a></li>
-                    </ul>
-                    <div id="tabs-rabbit">
-                        <table style="width: 95%;">
-                            <tr>
-                                <td colspan="2">
-                                    <p>Specify either "queue" or "topic" + "key".</p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><label for="rabbit_1">queue:</label></td>
-                                <td><input name="rabbit_1" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="queue name" value="{{ rabbit_1 }}"></td>
-                            </tr>
-                            <tr>
-                                <td><label for="rabbit_2">topic:</label></td>
-                                <td><input name="rabbit_2" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="topic name" value="{{ rabbit_2 }}"></td>
-                            </tr>
-                            <tr>
-                                <td><label for="rabbit_3">key:</label></td>
-                                <td><input name="rabbit_3" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="binding key (for topic only)" value="{{ rabbit_3 }}"></td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div id="tabs-kafka">
-                        <table style="width: 95%;">
-                            <tr>
-                                <td colspan="2">
-                                    <p>Specify "topic".</p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><label for="kafka_1">topic:</label></td>
-                                <td><input name="kafka_1" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="topic name" value="{{ kafka_1 }}"></td>
-                            </tr>
-                            <tr>
-                                <td><label for="kafka_2">key (optional):</label></td>
-                                <td><input name="kafka_2" type="text" style="width: 80%;" class="ui-widget-content"
-                                           placeholder="key (for hashed partitioning )" value="{{ kafka_2 }}"></td>
-                            </tr>
-                        </table>
-                    </div>
-                    <input id="mq" name="mq" type="hidden" value="{{ mq }}">
-                    <input id="mq-idx" name="mq-idx" type="hidden" value="{{ mq_idx }}">
-                </div>
+{#                <div id="tabs-mq">#}
+{#                    <ul>#}
+{#                        <li><a href="#tabs-rabbit">{{ MQTypes.RabbitMQ }}</a></li>#}
+{#                        <li><a href="#tabs-kafka">{{ MQTypes.Kafka }}</a></li>#}
+{#                    </ul>#}
+{#                    <div id="tabs-rabbit">#}
+{#                        <table style="width: 95%;">#}
+{#                            <tr>#}
+{#                                <td colspan="2">#}
+{#                                    <p>Specify either "queue" or "topic" + "key".</p>#}
+{#                                </td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="rabbit_1">queue:</label></td>#}
+{#                                <td><input name="rabbit_1" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="queue name" value="{{ rabbit_1 }}"></td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="rabbit_2">topic:</label></td>#}
+{#                                <td><input name="rabbit_2" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="topic name" value="{{ rabbit_2 }}"></td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="rabbit_3">key:</label></td>#}
+{#                                <td><input name="rabbit_3" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="binding key (for topic only)" value="{{ rabbit_3 }}"></td>#}
+{#                            </tr>#}
+{#                        </table>#}
+{#                    </div>#}
+{#                    <div id="tabs-kafka">#}
+{#                        <table style="width: 95%;">#}
+{#                            <tr>#}
+{#                                <td colspan="2">#}
+{#                                    <p>Specify "topic".</p>#}
+{#                                </td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="kafka_1">topic:</label></td>#}
+{#                                <td><input name="kafka_1" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="topic name" value="{{ kafka_1 }}"></td>#}
+{#                            </tr>#}
+{#                            <tr>#}
+{#                                <td><label for="kafka_2">key (optional):</label></td>#}
+{#                                <td><input name="kafka_2" type="text" style="width: 80%;" class="ui-widget-content"#}
+{#                                           placeholder="key (for hashed partitioning )" value="{{ kafka_2 }}"></td>#}
+{#                            </tr>#}
+{#                        </table>#}
+{#                    </div>#}
+{#                    <input id="mq" name="mq" type="hidden" value="{{ mq }}">#}
+{#                    <input id="mq-idx" name="mq-idx" type="hidden" value="{{ mq_idx }}">#}
+{#                </div>#}
 
                 <!-- overriding plugins -->
                 <div id="tabs-plugin">
@@ -156,7 +157,7 @@
 
     var msg_src_idx = 0,
             file_idx = 0,
-            mq_idx = 0,
+{#            mq_idx = 0,#}
             stack_idx = 0;
 
     // list message files in data_store
@@ -183,15 +184,15 @@
     }).tabs("option", "active", {{ msg_source_idx | default:0 }});
 
     // MQ selection
-    $("#tabs-mq").tabs({
-        activate: function (event, ui) {
-            $("#mq").val(ui.newTab.text());
-            $("#mq-idx").val($(this).tabs("option", "active"));
-        },
-        create: function(event, ui) {
-            $("#mq").val("{{ mq }}" || ui.tab.text());
-        }
-    }).tabs("option", "active", {{ mq_idx | default:0 }});
+{#    $("#tabs-mq").tabs({#}
+{#        activate: function (event, ui) {#}
+{#            $("#mq").val(ui.newTab.text());#}
+{#            $("#mq-idx").val($(this).tabs("option", "active"));#}
+{#        },#}
+{#        create: function(event, ui) {#}
+{#            $("#mq").val("{{ mq }}" || ui.tab.text());#}
+{#        }#}
+{#    }).tabs("option", "active", {{ mq_idx | default:0 }});#}
 
     // plugin stack tabs
     $("#tabs-plugin").tabs({
