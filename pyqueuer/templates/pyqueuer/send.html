@@ -105,7 +105,7 @@
 
                 <!-- overriding plugins -->
                 <div id="tabs-plugin">
-                    <h4>Select plugins to override the message:</h4>
+                    <h4>Select plugins to override the message ("{{ reversed_stack_name }}" contains all plugins):</h4>
                     <ul>
                         {% for stack, plugin_names in stacks.items %}
                         <li><a href="#tabs-{{ stack }}">{{ stack }}</a></li>

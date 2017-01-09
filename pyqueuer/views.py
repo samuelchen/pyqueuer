@@ -27,6 +27,8 @@ log = logging.getLogger(__name__)
 
 # used to split a id/name of a html tag.
 html_tag_splitter = '♥'
+# used to stack all plugins
+reversed_stack_name = '_'
 
 
 # to render full template path
@@ -185,20 +187,30 @@ def send(request):
         error = str(err)
 
     files = OrderedDict()
-    p = pathlib.Path(ucfg.get(GeneralConfKeys.data_store))
-    if p.is_dir():
-        for q in sorted(p.iterdir()):
-            try:
-                with q.open('tr') as f:
-                    files[q.name] = f.read(150) + '\n ...'
-            except Exception as err:
-                log.exception(err)
+    p = ucfg.get(GeneralConfKeys.data_store)
+    if p:
+        p = pathlib.Path(p)
+        if p.is_dir():
+            for q in sorted(p.iterdir()):
+                try:
+                    with q.open('tr') as f:
+                        files[q.name] = f.read(150) + '\n ...'
+                except Exception as err:
+                    log.exception(err)
+    else:
+        files['no data_store'] = 'Please specify your data_store in setting.'
 
+    # prepare user plugin stacks
     stacks = OrderedDict()
+    stacks[reversed_stack_name] = []        # stack for all plugin
+    for plugin in plugins.values():
+        stacks[reversed_stack_name].append(plugin.name)
     for item in PluginStackModel.objects.filter(user=request.user).order_by('stack', 'plugin'):
         if item.stack not in stacks:
             stacks[item.stack] = []
         stacks[item.stack].append(item.plugin)
+
+
 
     context = {
         "MQTypes": MQTypes,
@@ -206,6 +218,7 @@ def send(request):
         "plugins": plugins,
         "stacks": stacks,
         "splitter": html_tag_splitter,
+        "reversed_stack_name": reversed_stack_name,
         "message": message,
         "error": error,
     }
@@ -322,7 +335,7 @@ def plugin(request):
                 tmp = req.split(html_tag_splitter)
                 old_name = tmp[1]
                 new_name = request.POST[req]
-                if old_name != new_name:
+                if old_name != new_name and new_name != reversed_stack_name:
                     req_rename[old_name] = new_name
 
         # update stacks with plugins (renamed as new)
@@ -330,6 +343,8 @@ def plugin(request):
             tmp = req.split(html_tag_splitter)
             stack = tmp[1]
             plug = tmp[2]
+
+            # this stack need to be renamed
             if stack in req_rename:
                 stack = req_rename[stack]
             obj, created = PluginStackModel.objects.get_or_create(
@@ -351,6 +366,7 @@ def plugin(request):
 
     context = {
         "splitter": html_tag_splitter,
+        "reversed_stack_name": reversed_stack_name,
         "plugins": plugins,
         "stacks": stacks,
         "message": msg,

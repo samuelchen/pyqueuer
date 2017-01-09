@@ -10,7 +10,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
 from .utils import PropertyDict
-
+from functools import reduce
 
 # ---------------- Consts ---------------
 # NOTICE: const names must be unique.
@@ -80,6 +80,7 @@ ConfKeys = PropertyDict([
     ('rabbit', RabbitConfKeys),
     ('kafka', KafkaConfKeys),
 ])
+ConfKeys.key_count = reduce(lambda x, y: x + y, [len(keys) for keys in ConfKeys])
 
 
 # ----------- Models --------------
@@ -121,6 +122,8 @@ class UserConf(object):
 
     def __init__(self, user):
         self._user = user
+        if len(self.all()) < ConfKeys.key_count:
+            self.initialize()
 
     def initialize(self):
         for section, conf in ConfKeys.items():
