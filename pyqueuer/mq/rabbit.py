@@ -46,7 +46,7 @@ class RabbitMQConnection(IConnect):
                 self._conn = pika.BlockingConnection(parameters)
             except pika.exceptions.ConnectionClosed:
                 if retries >= 3 or not self.auto_reconnect:
-                    raise
+                    raise pika.exceptions.ConnectionClosed('Can not connect RabbitMQ %s:%s' % (self._host, self._port))
                 else:
                     log.warn('Fail connecting RabbitMQ server %s:%s. Retry in %d seconds.'
                              % (self._host, self._port, interval))
