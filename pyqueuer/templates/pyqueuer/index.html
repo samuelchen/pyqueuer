@@ -3,52 +3,21 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-
-    <div id="sender" class="sidebar-left container">
-        <h3>Section 1</h3>
-
-        <div>
-            <p>
-                Mauris mauris ante, blandit et, ultrices a, suscipit eget, quam. Integer
-                ut neque. Vivamus nisi metus, molestie vel, gravida in, condimentum sit
-                amet, nunc. Nam a nibh. Donec suscipit eros. Nam mi. Proin viverra leo ut
-                odio. Curabitur malesuada. Vestibulum a velit eu ante scelerisque vulputate.
-            </p>
-        </div>
-        <h3>Section 1</h3>
-
-        <div>
-            <p>
-                Mauris mauris ante, blandit et, ultrices a, suscipit eget, quam. Integer
-                ut neque. Vivamus nisi metus, molestie vel, gravida in, condimentum sit
-                amet, nunc. Nam a nibh. Donec suscipit eros. Nam mi. Proin viverra leo ut
-                odio. Curabitur malesuada. Vestibulum a velit eu ante scelerisque vulputate.
-            </p>
-        </div>
+    <H2>PyQueuer</H2>
+    <p>A convenience tool to automatically produce/consume message to/from Message Queue.</p>
+    <div>
+        <h3>Usage:</h3>
+        <ol>
+            <li><a href="{% url 'register' %}">Register</a> your account and <a href="{% url 'login' %}">login</a>.</li>
+            <li>Configure your MQ, <b>data_store</b>(path of file messages) in <a href="{% url 'setting' %}">setting</a>. </li>
+            <li>Setup your <a href="{% url 'plugin' %}">plugin</a> stacks for convenience access plugins (optional)</li>
+            <li>Open <a href="{% url 'consume' %}">consume</a> page to listen to a queue/topic.</li>
+            <li>Open <a href="{% url 'send' %}">send</a> page to send a message either in <b>file</b> or <b>data</b></li>
+        </ol>
     </div>
-
-    <div id="service" class="content container">
-        asdfsdf
-        sdfasdf
-
-        sdf
-    </div>
-
-
-    <div id="consumer" , class="sidebar-right container">
-        sdflksdjf
-        sdf
-        sdfsdfljsd
-    </div>
+    <p>Thanks for using. Enjoy.</p>
 {% endblock %}
 
 {% block script %}
-    <script>
-        $(function () {
-            $("#sender").accordion();
-        });
-        $(function () {
-            $("#sender").selectable();
-        });
-    </script>
+
 {% endblock %}

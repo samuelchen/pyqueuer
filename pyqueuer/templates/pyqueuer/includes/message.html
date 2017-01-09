@@ -1,11 +1,11 @@
 <!-- BEGIN message & error -->
-<div class="system-message">
-{% if error %}<div class="ui-state-error"><code id="error" class="ui-state-error-text">{{ error|safe|linebreaksbr }}</code></div>{% endif %}
-{% if message %}<div class="ui-state-default"><code id="message">{{ message|safe|linebreaksbr }}</code></div>{% endif %}
+<div>
+{% if error %}<div id="error" class="ui-state-error">{{ error|safe|linebreaksbr }}</div>{% endif %}
+{% if message %}<div id="message" class="ui-state-default">{{ message|safe|linebreaksbr }}</div>{% endif %}
 </div>
 <script language="Javascript">
     function _sys_msg(msg, is_err, clear) {
-        m = is_err ? $("#error") : $("#message");
+        var m = is_err ? $("#error") : $("#message");
         if (m.length == 0) {
             m = $(".system-message");
         };

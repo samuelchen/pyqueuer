@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+
+{#{% if form.errors %}#}
+{#    <div class="errors">#}
+{#{{ form.errors }}#}
+{#    </div>#}
+{#{% endif %}#}
+
+{#{% if next %}#}
+{#    {% if user.is_authenticated %}#}
+{#    <p>Your account doesn't have access to this page. To proceed,#}
+{#    please login with an account that has access.</p>#}
+{#    {% else %}#}
+{#    <p>Please login to see this page.</p>#}
+{#    {% endif %}#}
+{#{% endif %}#}
+
+<form method="post" action="{% url 'register' %}">
+{% csrf_token %}
+<table>
+{% for field in form %}
+<tr>
+    <td>{{ field.label_tag }}</td>
+    <td>{{ field }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<input type="submit" value="register" />
+{#<input type="hidden" name="next" value="{{ next }}" />#}
+</form>
+
+{# Assumes you setup the password_reset view in your URLconf #}
+<p><a href="{% url 'login' %}">Login</a> | <a href="{% url 'password_reset' %}">Lost password?</a></p>
+
+{% endblock %}

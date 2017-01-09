@@ -10,6 +10,9 @@ from django.shortcuts import render, get_list_or_404, get_object_or_404
 from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.debug import sensitive_post_parameters
+from django.contrib.auth.forms import UserCreationForm
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
 from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys, KafkaConfKeys
 from .models import PluginStackModel
@@ -78,12 +81,12 @@ def setting(request):
 
     confs = PropertyDict()
 
-    count = len(ucfg.all())
+    # count = len(ucfg.all())
     for section, options in ConfKeys.items():
         confs[section] = PropertyDict().fromkeys(options.values())
-        count -= len(options)
-    if count < 0:
-        ucfg.initialize()
+        # count -= len(options)
+    # if count < 0:
+    #     ucfg.initialize()
 
     for opt in ucfg.all():
         for section in ConfKeys.keys():
@@ -375,7 +378,33 @@ def plugin(request):
     return render(request, t('plugin.html'), context=context)
 
 
+@sensitive_post_parameters()
+@csrf_protect
+def register(request):
+    msg = None
+    error = []
+
+    if request.method == "POST":
+        form = UserCreationForm(data=request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('/')
+        else:
+            error = form.errors
+    else:
+        form = UserCreationForm()
+
+    context = {
+        'form': form,
+        'message': msg,
+        'error': error,
+    }
+
+    return render(request, 'registration/register.html', context)
+
+
 # --- convenience functions ---
+
 
 def _handle_mq_tabs_request(request):
     """

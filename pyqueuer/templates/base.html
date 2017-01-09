@@ -4,7 +4,7 @@
 <head lang="en">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>{% block title %}pyqueuer{% endblock %}</title>
+    <title>{% block title %}<!--TITLE BLOCK-->{% endblock %} - pyqueuer</title>
     <link href="{% static 'pyqueue/jqueryui-1.12.1/jquery-ui.min.css' %}" rel="stylesheet">
     <link href="{% static 'pyqueue/css/portal.css' %}" rel="stylesheet">
     <script src="{% static 'pyqueue/js/jquery-3.1.1.min.js' %}"></script>
@@ -30,6 +30,9 @@
             {% if request.user.is_authenticated %}
             <span>{{ request.user }}. </span>
             <a href="/logout">Logout</a>
+            {% else %}
+            <a href="/login">Login</a> |
+            <a href="/register">Register</a>
             {% endif %}
         </div>
         <div style="clear: both"></div>

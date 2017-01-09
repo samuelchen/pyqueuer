@@ -21,15 +21,15 @@ from . import views
 
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
+    url(r'^admin/', admin.site.urls, name='admin'),
     url(r'^', include('django.contrib.auth.urls')),
-    url(r'^$', views.index),
-    url(r'^setting/', views.setting),
-    url(r'^send/', views.send),
-    url(r'^consume/', views.consume),
-    url(r'^output/', views.output),
-    url(r'^plugin/', views.plugin),
-
+    url(r'^$', views.index, name='index'),
+    url(r'^setting/', views.setting, name='setting'),
+    url(r'^send/', views.send, name='send'),
+    url(r'^consume/', views.consume, name='consume'),
+    url(r'^output/', views.output, name='output'),
+    url(r'^plugin/', views.plugin, name='plugin'),
+    url(r'^register/', views.register, name='register'),
 ]
 
 if __debug__ and settings.DEBUG:
