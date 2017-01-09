@@ -32,6 +32,7 @@
             <!-- Group tabs. New or Edit. -->
             <div id="tabs-stack">
                 <h4>Customize Plugin Stack</h4>
+                <p> "{{ reversed_stack_name }}" is a reserved name. It will contains all plugins.</p>
                 <ul>
                 </ul>
             </div>
@@ -80,7 +81,7 @@
                 var panelId = $(this).closest("li").remove().attr("aria-controls");
                 $("#" + panelId).remove();
                 var dels = $("#inp-del-stacks");
-                dels.val(dels + name + ',');
+                dels.val(dels.val() + name + ',');
                 dirty = true;
                 tabs.tabs("refresh");
             }
@@ -104,8 +105,12 @@
             function edit_done() {
                 dirty = true;
                 inp.attr("type", "hidden");
-                inp.val(inp.val().replace(/[^a-zA-Z0-9_\-]/g, '-'));
-                lnk.text(inp.val());
+                if (inp.val() != "{{ reversed_stack_name }}") {
+                    inp.val(inp.val().replace(/[^a-zA-Z0-9_\-]/g, '-'));
+                    lnk.text(inp.val());
+                } else {
+                    inp.val(lnk.text());
+                }
                 lnk.show();
                 icons.show();
             };

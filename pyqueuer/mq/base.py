@@ -9,21 +9,22 @@ import abc
 from ..utils import PropertyDict
 
 
-class MQClient(object):
+class IConnect(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, conf, *args, **kwargs):
+    def __init__(self, conf):
         """
         ctor with given configuration dict.
         :param conf: configuration dict.
         """
         self.__config = PropertyDict(conf)
-        self.init(*args, **kwargs)
+        self.init()
 
     @abc.abstractmethod
-    def init(self, *args, **kwargs):
+    def init(self):
         """
         Abstract initialization method for children class.
+        Use self.config dict to initialize.
         """
 
     # ------------------------
@@ -60,27 +61,33 @@ class MQClient(object):
         pass
 
     @abc.abstractmethod
-    def reconnect(self):
-        pass
-
-    @abc.abstractmethod
     def disconnect(self):
         pass
+
+
+class IProduce(object):
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, conn):
+        """
+        :param conn: A IConnect instance of same MQ type.
+        :return:
+        """
+        self._conn = conn
+
+    # ------------------------
+    # Properties
+    # ------------------------
+    @property
+    def connection(self):
+        return self._conn
 
     # ------------------------
     # Basic methods
     # ------------------------
 
     @abc.abstractmethod
-    def basic_get(self, queue):
-        pass
-
-    @abc.abstractmethod
-    def basic_send(self, message, queue):
-        pass
-
-    @abc.abstractmethod
-    def basic_ack(self):
+    def basic_send(self, message, **kwargs):
         pass
 
     # ------------------------
@@ -88,17 +95,44 @@ class MQClient(object):
     # ------------------------
 
     @abc.abstractmethod
-    def produce(self, message):
+    def produce(self, message, **kwargs):
+        pass
+
+
+class IConsume(object):
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, conn):
+        """
+        :param conn: A IConnect instance of same MQ type.
+        :return:
+        """
+        self._conn = conn
+
+    # ------------------------
+    # Properties
+    # ------------------------
+    @property
+    def connection(self):
+        return self._conn
+
+    # ------------------------
+    # Basic methods
+    # ------------------------
+
+    @abc.abstractmethod
+    def basic_get(self, **kwargs):
         pass
 
     @abc.abstractmethod
-    def consume(self):
+    def basic_ack(self, **kwargs):
         pass
 
-    @abc.abstractmethod
-    def produce_ex(self):
-        pass
+    # ------------------------
+    # High level methods
+    # ------------------------
 
     @abc.abstractmethod
-    def consume_ex(self):
+    def consume(self, **kwargs):
         pass
+

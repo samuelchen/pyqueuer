@@ -137,6 +137,7 @@ class Plugins(object):
     """
 
     __plugin_mgr = None
+    __metas = None
 
     @classmethod
     def __get_mgr(cls):
@@ -164,21 +165,23 @@ class Plugins(object):
             return mgr.getAllPlugins()
 
     @classmethod
-    def all_metas(cls, category=None):
-        plugins = OrderedDict()
-        for plugin in cls.all(category=category):
-            plugins[plugin.name] = PropertyDict({
-                "name": plugin.name,
-                "author": plugin.author,
-                "version": plugin.version,
-                "description": plugin.description,
-                "plugin_object": plugin.plugin_object,
+    def all_metas(cls, category=None, refresh=False):
+        if refresh or not cls.__metas:
+            plugins = {}
+            for plugin in cls.all(category=category):
+                plugins[plugin.name] = PropertyDict({
+                    "name": plugin.name,
+                    "author": plugin.author,
+                    "version": plugin.version,
+                    "description": plugin.description,
+                    "plugin_object": plugin.plugin_object,
 
-                "checked": False,
-                "key": plugin.plugin_object.key,
-                "value": None,
-            })
-        return plugins
+                    "checked": False,
+                    "key": plugin.plugin_object.key,
+                    "value": None,
+                })
+            cls.__metas = OrderedDict(sorted(plugins.items(), key=lambda x: x[1].name))
+        return cls.__metas
 
 
 __all__ = [

@@ -11,11 +11,11 @@ from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
-from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys
+from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys, KafkaConfKeys
 from .models import PluginStackModel
 from .utils import PropertyDict
-from .mq import create_client, MQTypes, get_confs
-from .service import ServiceUtils
+from .mq import MQClientFactory, MQTypes
+from .service import ServiceManager, MQConsumerService
 from .plugin import Plugins
 import os
 import pathlib
@@ -27,6 +27,8 @@ log = logging.getLogger(__name__)
 
 # used to split a id/name of a html tag.
 html_tag_splitter = '♥'
+# used to stack all plugins
+reversed_stack_name = '_'
 
 
 # to render full template path
@@ -70,7 +72,7 @@ def setting(request):
         else:
             for options in ConfKeys.values():
                 for value in options.values():
-                    print(value, request.POST[value])
+                    # print(value, request.POST[value])
                     ucfg.set(value, request.POST[value])
             message = 'Setting saved.'
 
@@ -106,14 +108,18 @@ def send(request):
     plugins = Plugins.all_metas()
 
     ucfg = UserConf(user=request.user)
-    queue = ucfg.get(RabbitConfKeys.queue_out)
-    exchange = ucfg.get(RabbitConfKeys.topic_out)
-    key = ucfg.get(RabbitConfKeys.key_out)
+
+    rabbit_1 = ucfg.get(RabbitConfKeys.queue_out)
+    rabbit_2 = ucfg.get(RabbitConfKeys.topic_out)
+    rabbit_3 = ucfg.get(RabbitConfKeys.key_out)
+
+    kafka_1 = ucfg.get(KafkaConfKeys.topic_out)
+    kafka_2 = ''
 
     try:
         if request.method == 'POST':
-            for r in request.POST:
-                print(r + ' - ' + request.POST[r])
+            # for r in request.POST:
+            #     print(r + ' - ' + request.POST[r])
 
             # load message string
             msg_source = request.POST['msg-source']
@@ -140,17 +146,21 @@ def send(request):
             # selected MQ
             mq = request.POST['mq']
             mq_idx = request.POST['mq-idx']
+            params = {}
             if mq == MQTypes.RabbitMQ:
-                queue = request.POST['queue']
-                exchange = request.POST['exchange']
-                key = request.POST['key']
+                params = {
+                    "queue": request.POST['rabbit_1'],     # queue
+                    "topic": request.POST['rabbit_2'],     # topic
+                    "key": request.POST['rabbit_3'],     # key
+                }
             elif mq == MQTypes.Kafka:
-                pass
+                params = {
+                    "topic": request.POST['kafka_1'],     # topic
+                    "key": request.POST['kafka_2'],     # key
+                }
             else:
                 raise Exception('Selected MQ "%s" is not supported' % mq)
 
-            conf = get_confs(user=request.user, mq_type=mq)
-            client = create_client(mq_type=mq, conf=conf)
             # process plugins to override msg
             for plugin in plugins.values():
                 if plugin.checked:
@@ -163,7 +173,10 @@ def send(request):
                         plugin.value = val
                         msg = plugin.plugin_object.update(msg, val)
 
-            client.send(msg, queue)
+            # produce message
+            conf = MQClientFactory.get_confs(mq_type=mq, user=request.user)
+            client = MQClientFactory.create_producer(mq_type=mq, conf=conf)
+            client.produce(msg, **params)
             message = 'Message sent.'
 
     except KeyError as err:
@@ -174,21 +187,30 @@ def send(request):
         error = str(err)
 
     files = OrderedDict()
-    p = pathlib.Path(ucfg.get(GeneralConfKeys.data_store))
-    if p.is_dir():
-        for q in p.iterdir():
-            try:
-                with q.open('tr') as f:
-                    files[q.name] = f.read(150) + '\n ...'
-            except Exception as err:
-                log.exception(err)
-    sorted(files)
+    p = ucfg.get(GeneralConfKeys.data_store)
+    if p:
+        p = pathlib.Path(p)
+        if p.is_dir():
+            for q in sorted(p.iterdir()):
+                try:
+                    with q.open('tr') as f:
+                        files[q.name] = f.read(150) + '\n ...'
+                except Exception as err:
+                    log.exception(err)
+    else:
+        files['no data_store'] = 'Please specify your data_store in setting.'
 
+    # prepare user plugin stacks
     stacks = OrderedDict()
+    stacks[reversed_stack_name] = []        # stack for all plugin
+    for plugin in plugins.values():
+        stacks[reversed_stack_name].append(plugin.name)
     for item in PluginStackModel.objects.filter(user=request.user).order_by('stack', 'plugin'):
         if item.stack not in stacks:
             stacks[item.stack] = []
         stacks[item.stack].append(item.plugin)
+
+
 
     context = {
         "MQTypes": MQTypes,
@@ -196,6 +218,7 @@ def send(request):
         "plugins": plugins,
         "stacks": stacks,
         "splitter": html_tag_splitter,
+        "reversed_stack_name": reversed_stack_name,
         "message": message,
         "error": error,
     }
@@ -209,63 +232,71 @@ def send(request):
 def consume(request):
     msg = None
     error = None
+    max_consumers = 5
 
     ucfg = UserConf(user=request.user)
-    queue = ucfg.get(RabbitConfKeys.queue_in)
-    exchange = ucfg.get(RabbitConfKeys.topic_in)
-    key = ucfg.get(RabbitConfKeys.key_in)
-    max_consumers = 5
+
+    rabbit_1 = ucfg.get(RabbitConfKeys.queue_in)
+    rabbit_2 = ucfg.get(RabbitConfKeys.topic_in)
+    rabbit_3 = ucfg.get(RabbitConfKeys.key_in)
+
+    kafka_1 = ucfg.get(KafkaConfKeys.topic_in)
+    kafka_2 = ''
 
     if request.method == 'POST':
 
         if 'sid' in request.POST:
+            # close consumer
             sid = int(request.POST['sid'])
-            ServiceUtils.stop_consumer(user=request.user, sid=sid)
+            ServiceManager.private(user=request.user).stop(sid=sid)
         else:
-            queue = request.POST['queue']
-            exchange = request.POST['exchange']
-            key = request.POST['key']
+
+            # selected MQ
+            mq, mq_idx, params = _handle_mq_tabs_request(request)
+
+            # other configs
             auto_save = 'check-save' in request.POST and True or False
 
-            conf = get_confs(user=request.user, mq_type=MQTypes.RabbitMQ)
-            client = create_client(mq_type=MQTypes.RabbitMQ, conf=conf)
+            # client
+            conf = MQClientFactory.get_confs(mq_type=MQTypes.RabbitMQ, user=request.user)
+            client = MQClientFactory.create_consumr(mq_type=MQTypes.RabbitMQ, conf=conf)
 
-            count = len(ServiceUtils.consumers)
+            svc_mgr = ServiceManager.private(user=request.user)
+            count = len(svc_mgr.all())
             if count < max_consumers:
-                svc = ServiceUtils.start_consumer(user=request.user, client=client, key=key, queue=queue,
-                                                  exchange=exchange, autosave=auto_save)
-                if queue:
-                    svc.name = 'Queue:%s' % queue
-                elif exchange and key:
-                    svc.name = 'Exch:%s, Key:%s' % (exchange, key)
-            else:
-                error = 'You can only start %d consumers' % max
+                conf = MQClientFactory.get_confs(mq_type=mq, user=request.user)
+                consumer = MQClientFactory.create_consumr(mq_type=mq, conf=conf)
+                service = MQConsumerService(consumer=consumer)
+                svc = svc_mgr.start(service, autosave=auto_save, **params)
 
-    svcs = ServiceUtils.consumers[request.user] if request.user in ServiceUtils.consumers else {}
+            else:
+                error = 'You can only start %d consumers' % max_consumers
+
+    svcs = ServiceManager.private(user=request.user).all()
     context = {
-        "queue": queue,
-        "exchange": exchange,
-        "key": key,
+        "MQTypes": MQTypes,
         "services": svcs,
         "message": msg,
         "error": error,
     }
+    context.update(locals())
     return render(request, t('consume.html'), context=context)
 
 
 @login_required
 @require_http_methods(['GET', ])
 def output(request):
-    if request.user in ServiceUtils.consumers:
+    svcs = ServiceManager.private(user=request.user).all()
+    # print('services:', svcs)
+    if svcs:
         sid = int(request.GET['sid']) if 'sid' in request.GET else None
-        if sid in ServiceUtils.consumers[request.user]:
-            svc = ServiceUtils.consumers[request.user][sid]
+        if sid in svcs:
+            svc = svcs[sid]
             out = svc.flush_output()
             # print(json.dumps(out))
             # print(len(out))
             return JsonResponse(out, safe=False)
-        else:
-            return HttpResponseNotFound()
+    return HttpResponseNotFound()
 
 
 @login_required
@@ -304,7 +335,7 @@ def plugin(request):
                 tmp = req.split(html_tag_splitter)
                 old_name = tmp[1]
                 new_name = request.POST[req]
-                if old_name != new_name:
+                if old_name != new_name and new_name != reversed_stack_name:
                     req_rename[old_name] = new_name
 
         # update stacks with plugins (renamed as new)
@@ -312,6 +343,8 @@ def plugin(request):
             tmp = req.split(html_tag_splitter)
             stack = tmp[1]
             plug = tmp[2]
+
+            # this stack need to be renamed
             if stack in req_rename:
                 stack = req_rename[stack]
             obj, created = PluginStackModel.objects.get_or_create(
@@ -333,9 +366,40 @@ def plugin(request):
 
     context = {
         "splitter": html_tag_splitter,
+        "reversed_stack_name": reversed_stack_name,
         "plugins": plugins,
         "stacks": stacks,
         "message": msg,
         "error": error,
     }
     return render(request, t('plugin.html'), context=context)
+
+
+# --- convenience functions ---
+
+def _handle_mq_tabs_request(request):
+    """
+    Handle the POST request for MQ selection tabs.
+    The HTML codes should be generated from "pyqueuer/includes/mq-sel-tab.html". (Django include)
+    Will handle selected MQ name, selected MQ tab index and all posted fields depends on selected MQ.
+    :param request: Django request object.
+    :return: tuple of ("Selected MQ Name", "Tab Index of selected MQ", "Fields Dict of selected MQ")
+    """
+    mq = request.POST['mq']
+    mq_idx = request.POST['mq-idx']
+    params = {}
+    if mq == MQTypes.RabbitMQ:
+        params = {
+            "queue": request.POST['rabbit_1'],     # queue
+            "topic": request.POST['rabbit_2'],     # topic
+            "key": request.POST['rabbit_3'],     # key
+        }
+    elif mq == MQTypes.Kafka:
+        params = {
+            "topic": request.POST['kafka_1'],     # topic
+            "key": request.POST['kafka_2'],     # key
+        }
+    else:
+        raise Exception('Selected MQ "%s" is not supported' % mq)
+
+    return mq, mq_idx, params
