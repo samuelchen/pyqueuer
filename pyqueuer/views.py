@@ -18,7 +18,8 @@ from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys, KafkaCo
 from .models import PluginStackModel
 from .utils import PropertyDict
 from .mq import MQClientFactory, MQTypes
-from .service import ServiceManager, MQConsumerService
+from .mq.service import MQConsumerService
+from .service import ServiceManager
 from .plugin import Plugins
 import os
 import pathlib
@@ -197,7 +198,7 @@ def send(request):
             for q in sorted(p.iterdir()):
                 try:
                     with q.open('tr') as f:
-                        files[q.name] = f.read(150) + '\n ...'
+                        files[q.name] = f.read()    # f.read(150) + '\n ...'
                 except Exception as err:
                     log.exception(err)
     else:
@@ -212,8 +213,6 @@ def send(request):
         if item.stack not in stacks:
             stacks[item.stack] = []
         stacks[item.stack].append(item.plugin)
-
-
 
     context = {
         "MQTypes": MQTypes,

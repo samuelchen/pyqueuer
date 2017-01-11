@@ -92,8 +92,8 @@ class KafkaProducer(IProduce):
             record_metadata = future.get(timeout=10)
             log.info('Message sent.')
             log.debug(record_metadata)
-        except kafka.KafkaError:
-            log.exception('Message is not sent.')
+        except kafka.KafkaError as err:
+            log.exception('Message is not sent. %s' % err)
 
 
 class KafkaConsumer(IConsume):
@@ -130,9 +130,13 @@ class KafkaConsumer(IConsume):
         callback = kwargs['callback'] if 'callback' in kwargs else lambda x: log.debug('Received message:  %s' % x)
         stop_event = kwargs['stop_event'] if 'stop_event' in kwargs else None
 
-        self.receiver.assign(topic)
+        self.receiver.subscribe([topic, ])
 
         for msg in self.receiver:
-            callback(msg)
+            log.debug(msg)
+            try:
+                callback(str(msg.value, encoding='utf-8'))
+            except Exception as err:
+                log.exception(err)
             if stop_event is not None and stop_event.is_set():
                 break

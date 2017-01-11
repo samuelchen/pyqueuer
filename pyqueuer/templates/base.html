@@ -17,10 +17,10 @@
     <div class="toolbar">
         <div style="float:left">
             <a href="/">Home</a>
-            <a href="/setting">Setting</a>
-            <a href="/send">Send</a>
-            <a href="/consume">Consume</a>
-            <a href="/plugin">Plugin</a>
+            <a href="{% url 'setting' %}">Setting</a>
+            <a href="{% url 'send' %}">Send</a>
+            <a href="{% url 'consume' %}">Consume</a>
+            <a href="{% url 'plugin' %}">Plugin</a>
             {% if request.user.is_staff %}
             <a href="/admin">Admin</a>
             {% endif %}
@@ -29,10 +29,10 @@
         <div style="float:right">
             {% if request.user.is_authenticated %}
             <span>{{ request.user }}. </span>
-            <a href="/logout">Logout</a>
+            <a href="{% url 'logout' %}">Logout</a>
             {% else %}
-            <a href="/login">Login</a> |
-            <a href="/register">Register</a>
+            <a href="{% url 'login' %}">Login</a> |
+            <a href="{% url 'register' %}">Register</a>
             {% endif %}
         </div>
         <div style="clear: both"></div>

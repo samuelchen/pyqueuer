@@ -14,7 +14,6 @@ from yapsy.PluginManager import PluginManager
 from yapsy.PluginFileLocator import PluginFileAnalyzerMathingRegex
 import re
 from collections import OrderedDict
-from .utils import PropertyDict
 
 re_valid_plugin_name = re.compile(r'^[a-zA-Z0-9_\-]+$')
 
@@ -169,7 +168,7 @@ class Plugins(object):
         if refresh or not cls.__metas:
             plugins = {}
             for plugin in cls.all(category=category):
-                plugins[plugin.name] = PropertyDict({
+                plugins[plugin.name] = {
                     "name": plugin.name,
                     "author": plugin.author,
                     "version": plugin.version,
@@ -179,7 +178,7 @@ class Plugins(object):
                     "checked": False,
                     "key": plugin.plugin_object.key,
                     "value": None,
-                })
+                }
             cls.__metas = OrderedDict(sorted(plugins.items(), key=lambda x: x[1].name))
         return cls.__metas
 
