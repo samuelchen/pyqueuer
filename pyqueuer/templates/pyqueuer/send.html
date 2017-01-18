@@ -28,9 +28,7 @@
                     {% for name, data in files.items %}
                         <h5 id="code-{{ name }}">{{ name }}</h5>
                         <div>
-                            <pre style="height: 150px;">
-                                <code>{{ data | linebreaksbr }}</code>
-                            </pre>
+                            <pre style="height: 150px;"><code>{{ data }}</code></pre>
                         </div>
                     {% endfor %}
                 </div>
@@ -38,8 +36,8 @@
                 <input id="msg-file-idx" name="msg-file-idx" type="hidden" value="{{ msg_file_idx }}"/>
             </div>
             <div id="tabs-data">
-                <p>Enter your message:</p>
-                <textarea id="msg-data" name="msg-data" rows="15" style="width: 100%;"
+                <label for="msg-data">Enter message to be sent:</label>
+                <textarea id="msg-data" name="msg-data" rows="15" style="width: 100%; font-family: Consolas, 'Courier New';"
                           class="ui-widget-content">{{ msg_data }}</textarea>
             </div>
             <input id="msg-source" name="msg-source" type="hidden" value="{{ msg_source }}"/>

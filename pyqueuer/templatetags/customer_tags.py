@@ -63,3 +63,9 @@ def key_from_var(obj, *args):
         else:
             return ''
     return val
+
+
+@register.filter
+@stringfilter
+def trim(value):
+    return value.strip()
