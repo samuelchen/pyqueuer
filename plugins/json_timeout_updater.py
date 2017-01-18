@@ -6,12 +6,18 @@ Sample for updating json fields.
 """
 
 import simplejson as json
-from pyqueuer.plugin import MessageUpdater
+from pyqueuer.plugin import IndividualUpdater
 
 
-class TimeoutUpdater(MessageUpdater):
-    def update(self, message, value):
+class TimeoutUpdater(IndividualUpdater):
+
+    @property
+    def params(self):
+        return 'seconds',
+
+    def update(self, message, arguments):
         key = 'time_out'
+        value = arguments['seconds']
         obj = json.loads(message)
         if key in obj:
             obj[key] = int(value) * 1000  # s -> ms

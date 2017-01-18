@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {% load customer_tags %}
 
 {% block title %}Send{% endblock %}
 
@@ -132,9 +132,12 @@
                         <input type="checkbox" id="chk{{ splitter }}{{ plugin.name }}"
                                name="plugin{{ splitter }}{{ plugin.name }}" class="plugin-sel"
                                {% if plugin.name in checked %}checked="true"{% endif %}>
-                        {% if not plugin.plugin_object.is_auto_value %}
-                        <input type="text" name="pluginv{{ splitter }}{{ plugin.name }}" value="{{ plugin.value |default:''}}">
-                        {% endif %}
+                        {% for parm in plugin.plugin_object.params %}
+                        <label for="chk{{ splitter }}{{ plugin.name }}{{ splitter }}{{ parm }}">{{ parm }}:</label>
+                        <input type="text" id=="chk{{ splitter }}{{ plugin.name }}{{ splitter }}{{ parm }}"
+                               name="pluginv{{ splitter }}{{ plugin.name }}{{ splitter }}{{ parm }}"
+                               value="{% key_from_var plugin_args name parm %}">
+                        {% endfor %}
                     </li>
                     {% endfor %}
                 {% endfor %}

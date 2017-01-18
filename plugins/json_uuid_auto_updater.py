@@ -7,11 +7,12 @@ Sample for updating json fields.
 
 import simplejson as json
 import uuid
-from pyqueuer.plugin import MessageAutoUpdater
+from pyqueuer.plugin import IndividualUpdater
 
 
-class UUIDAutoUpdater(MessageAutoUpdater):
-    def update(self, message):
+class UUIDAutoUpdater(IndividualUpdater):
+
+    def update(self, message, arguments):
         obj = json.loads(message)
         if 'uuid' in obj:
             obj['uuid'] = str(uuid.uuid4())

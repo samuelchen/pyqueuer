@@ -15,6 +15,7 @@ register = Library()
 
 
 @stringfilter
+@register.filter(needs_autoescape=True)
 def spacify(value, autoescape=None):
     if autoescape:
         esc = conditional_escape
@@ -22,7 +23,9 @@ def spacify(value, autoescape=None):
         esc = lambda x: x
     return mark_safe(re.sub('\s', '&' + 'nbsp;', esc(value)))
 
+
 @stringfilter
+@register.filter
 def _2space(value):
     """
     Convert underscores to spaces for a string.
@@ -31,7 +34,9 @@ def _2space(value):
     """
     return value.replace('_', ' ')
 
+
 @stringfilter
+@register.filter
 def space2_(value):
     """
     Convert spaces to underscores for a string.
@@ -40,7 +45,21 @@ def space2_(value):
     """
     return value.replace(' ', '_')
 
-spacify.needs_autoescape = True
-register.filter(spacify)
-register.filter(_2space)
-register.filter(space2_)
+
+@register.simple_tag
+def key_from_var(obj, *args):
+    """
+    Obtain values from dict/object with given key variables in template.
+    :param obj:
+    :param args:
+    :return:
+    """
+    val = obj
+    for key in args:
+        if key in val:
+            val = val[key]
+        elif hasattr(val, key):
+            val = getattr(val, key)
+        else:
+            return ''
+    return val

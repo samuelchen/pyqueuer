@@ -113,6 +113,7 @@ def send(request):
     plugins_batch = Plugins.batch_updaters()
     plugins_all = Plugins.all()
     plugins_checked = set()
+    plugin_args = {}
 
     ucfg = UserConf(user=request.user)
 
@@ -164,47 +165,49 @@ def send(request):
             client = MQClientFactory.create_producer(mq_type=mq_form_fields['mq'], conf=conf)
 
             def send_a_message(the_msg):
-                # process individual updater plugins to override msg
+                # handle individual updater plugins to override msg
                 for p in plugins_updater.values():
                     if p.name in plugins_checked and p.name in stacks[stack]:
+                        args = {}
                         try:
-                            if p.plugin_object.is_auto_value:
-                                    the_msg = p.plugin_object.update(the_msg)
-                            else:
-                                val = request.POST['pluginv%s%s' % (html_tag_splitter, p.name)]
-                                if not val:
-                                    raise ValueError('You must specify value for plugin "%s"' % p.name)
-                                # p.value = val
-                                the_msg = p.plugin_object.update(the_msg, val)
+                            for parm in p.plugin_object.params:
+                                t = html_tag_splitter.join(['pluginv', p.name, parm])
+                                # if t not in request.POST:
+                                #     errors.append('You must specify "%s" for plugin "%s"' % (parm, p.name))
+                                #     continue
+                                args[parm] = request.POST[t]
+
+                            the_msg = p.plugin_object.update(the_msg, args)
                         except Exception as err:
                             e = 'Plugin "%s" fail. %s: %s.' % (p.name, type(err).__name__, str(err))
                             errors.append(e)
                             log.warn(e + 'Message is: %s' % the_msg)
+                        plugin_args[p.name] = args
                 client.produce(the_msg, **mq_params)
 
             sent = False
+            # handle batch updater plugins to override sending process
             for plug in plugins_batch.values():
                 if plug.name in plugins_checked and plug.name in stacks[stack]:
-                    log.debug('Process BatchUpdater plugin "%s". is_auto_value=%s' % (
-                        plug.name, plug.plugin_object.is_auto_value))
+                    log.debug('Process BatchUpdater plugin "%s". params=%s' % (plug.name, plug.plugin_object.params))
+                    plug.plugin_object.send_func = send_a_message
+                    plug.plugin_object.origin_message = msg     # set origin message
+                    plug.plugin_object.update_message(None)     # clear current message
+                    arguments = {}
                     try:
-                        plug.plugin_object.send_func = send_a_message
-                        plug.plugin_object.origin_message = msg     # set origin message
-                        if plug.plugin_object.is_auto_value:
-                            plug.plugin_object.run()
-                        else:
-                            val = request.POST['pluginv%s%s' % (html_tag_splitter, plug.name)]
-                            if not val:
-                                raise ValueError('You must specify value for plugin "%s"' % plug.name)
-                            # plug.value = val
-                            plug.plugin_object.run(val)
-                            plug.plugin_object.update_message(None)     # set current message to None for next time
+                        for parameter in plug.plugin_object.params:
+                            tag_name = html_tag_splitter.join(['pluginv', plug.name, parameter])
+                            # if t not in request.POST:
+                            #     errors.append('You must specify "%s" for plugin "%s"' % (parameter, plug.name))
+                            #     continue
+                            arguments[parameter] = request.POST[tag_name]
+                        plug.plugin_object.run(arguments)
                         sent = True
                     except Exception as err:
                         e = 'Plugin "%s" fail. %s: %s.' % (plug.name, type(err).__name__, str(err))
                         errors.append(e)
                         log.warn(e + 'Message is: %s' % msg)
-
+                    plugin_args[plug.name] = arguments
             if not sent:
                 send_a_message(msg)
 

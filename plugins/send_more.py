@@ -11,13 +11,11 @@ from pyqueuer.plugin import BatchUpdater, PluginException
 class SendMore(BatchUpdater):
 
     @property
-    def is_auto_value(self):
-        return False
+    def params(self):
+        return 'count',
 
-    def run(self, *args, **kwargs):
-        if len(args) < 1:
-            raise PluginException('You must specify sending count.')
-        count = int(args[0])
+    def run(self, arguments):
+        count = int(arguments['count'])
         for i in range(0, count):
             # self.update_message(None)
             self.send()
