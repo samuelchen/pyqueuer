@@ -4,3 +4,4 @@ configparser
 pika
 yapsy
 kafka-python
+django-nose

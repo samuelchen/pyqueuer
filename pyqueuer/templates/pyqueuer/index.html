@@ -1,10 +1,13 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load staticfiles %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
     <H2>PyQueuer</H2>
-    <p>A convenience tool to automatically produce/consume message to/from Message Queue.</p>
+
+    <div class="github-widget" style="min-width: 300px; max-width: 500px" data-repo="samuelchen/pyqueuer">
+        <p>A convenience tool to automatically produce/consume message to/from Message Queue.</p>
+    </div>
     <div>
         <h3>Usage:</h3>
         <ol>
@@ -19,5 +22,5 @@
 {% endblock %}
 
 {% block script %}
-
+    <script type="text/javascript" src="{% static 'pyqueuer/js/GitHub-Repo-Widget.min.js' %}"></script>
 {% endblock %}
