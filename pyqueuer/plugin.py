@@ -36,9 +36,14 @@ class PluginBase(object):
         assert isinstance(value, bool)
         self._is_activated = value
 
-    @abc.abstractproperty
-    def is_auto_value(self):
-        pass
+    @property
+    def params(self):
+        """
+        Parameter names (set) that this plugin accepts.
+        Override this to provide names of data need to be post.
+        You will receive the values corresponding to the names from "run()", "update()" or etc in sub-classes.
+        """
+        return ()
 
 
 class PluginException(Exception):
@@ -47,54 +52,20 @@ class PluginException(Exception):
 # --- individual message updater ---
 
 
-class Updater(PluginBase):
+class IndividualUpdater(PluginBase):
 
-    __metaclass__ = abc.ABCMeta
-
-    _key = None
-
-    @property
-    def key(self):
-        return self._key
-
-    @key.setter
-    def key(self, value):
-        self._key = value
-
-    @abc.abstractproperty
-    def is_auto_value(self):
-        pass
-
-
-class MessageAutoUpdater(Updater):
-    """
-    Plugin to automatically update a message without new value.
-    New value will be automatically generated.
-    """
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def update(self, message):
+    def update(self, message, arguments):
+        """
+        Plugin entry point. Implement this method for you plugin logic.
+        :param message: Message to be sent. Modify it for you logic.
+        :param arguments: The arguments corresponding to self.params.
+                        Override self.params property to provide the arugment names.
+        :return:
+        """
         pass
-
-    @property
-    def is_auto_value(self):
-        return True
-
-
-class MessageUpdater(Updater):
-    """
-    Plugin to update a message with given new value.
-    """
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def update(self, message, value):
-        pass
-
-    @property
-    def is_auto_value(self):
-        return False
 
 # --- batch messages updater ---
 
@@ -115,11 +86,11 @@ class BatchUpdater(PluginBase):
         pass
 
     @abc.abstractmethod
-    def run(self, *args, **kwargs):
+    def run(self, arguments):
         """
         Plugin entry point. Implement this method for you plugin logic.
-        :param args:
-        :param kwargs:
+        :param arguments: The arguments corresponding to self.params.
+                        Override self.params property to provide the arugment names.
         :return:
         """
         pass
@@ -159,7 +130,7 @@ class BatchUpdater(PluginBase):
         self.__func(msg)
 
     def update_message(self, message):
-        """update the message to be sent"""
+        """Modify the message to be sent"""
         self.__msg = message
 
 
@@ -218,8 +189,8 @@ class Plugins(object):
     # __metas = None
 
     __categories = {
-        'AutoUpdaters': MessageAutoUpdater,
-        'Updaters': MessageUpdater,
+        # 'AutoUpdaters': IndividualUpdater,
+        'Updaters': IndividualUpdater,
         'Batches': BatchUpdater,
     }
 
@@ -319,20 +290,10 @@ class Plugins(object):
     @classmethod
     def individual_updaters(cls, refresh=False):
         cls.__load(category='Updaters', refresh=refresh)
-        cls.__load(category='AutoUpdaters', refresh=refresh)
-        updaters = {}
-        updaters.update(cls.__plugins['Updaters'])
-        updaters.update(cls.__plugins['AutoUpdaters'])
-        updaters = PropertyDict(sorted(updaters.items(), key=lambda x: x[0]))
-        return updaters
-
-    # @classmethod
-    # def updaters(cls, refresh=False):
-    #     cls.__load(category='Updaters', refresh=refresh)
-    #     return cls.__plugins['Updaters']
+        return cls.__plugins['Updaters']
 
 __all__ = [
-    MessageUpdater,
-    MessageAutoUpdater,
+    IndividualUpdater,
+    IndividualUpdater,
     Plugins,
 ]
