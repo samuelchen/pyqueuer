@@ -35,7 +35,6 @@ class IConnect(object):
     # ------------------------
     # Properties
     # ------------------------
-
     __auto_reconnect = True
 
     @property
@@ -62,6 +61,14 @@ class IConnect(object):
 
     @abc.abstractmethod
     def disconnect(self):
+        pass
+
+    @abc.abstractmethod
+    def create_producer(self):
+        pass
+
+    @abc.abstractmethod
+    def create_consumer(self):
         pass
 
 
@@ -136,3 +143,7 @@ class IConsume(object):
     def consume(self, **kwargs):
         pass
 
+
+    @abc.abstractmethod
+    def stop(self):
+        pass

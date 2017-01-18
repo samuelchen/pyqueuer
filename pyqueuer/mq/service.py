@@ -8,6 +8,7 @@ service module defines general service implementation for MQ
 from ..service import ServiceMixin
 from .base import IConsume
 import simplejson as json
+from simplejson import JSONDecodeError
 import logging
 log = logging.getLogger(__name__)
 
@@ -33,12 +34,15 @@ class MQConsumerService(ServiceMixin):
         :param kwargs:
         :return:
         """
+
+        # TODO: if output is None
+
         def on_msg(msg):
             # print(" [x] [%s] %r" % (str(datetime.datetime.now())[:-3], msg))
             try:
                 message = json.loads(msg)
-            except Exception as err:
-                log.exception(err)
+            except JSONDecodeError:
+                # not json, should be bytes
                 message = msg.decode('utf-8')
 
             log.debug('Received message: "%s"' % message)

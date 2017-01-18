@@ -27,10 +27,17 @@ class TestRabbitMQ(unittest.TestCase):
     def tearDown(self):
         self.mq.disconnect()
 
-    def test_send(self):
+    def test_send_to_queue(self):
         msg = 'my first message.'
-        producer = self.mq.create_sender()
-        producer.produce(msg)
+        producer = self.mq.create_producer()
+        producer.produce(msg, queue=conf_rabbit.queue_out)
+        consumer = self.mq.create_consumer()
+        self.assertEqual(True, True)
+
+    def test_send_to_exchange(self):
+        msg = 'my second message to topic & key.'
+        producer = self.mq.create_producer()
+        producer.produce(msg, topic=conf_rabbit.topic_out, key=conf_rabbit.key_out)
         self.assertEqual(True, True)
 
 

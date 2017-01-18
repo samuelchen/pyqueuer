@@ -40,11 +40,21 @@ class KafkaConnection(IConnect):
         # No need to disconnect
         pass
 
+    def create_producer(self):
+        return KafkaProducer(conn=self)
+
+    def create_consumer(self):
+        return KafkaConsumer(conn=self)
+
+    # -- additional methods
+
     def create_sender(self):
+        """create a kafka-python lib producer"""
         sender = kafka.KafkaProducer(bootstrap_servers=['%s:%s' % (self._host, self._port)])
         return sender
 
     def create_receiver(self):
+        """create a kafka-python lib consumer"""
         receiver = kafka.KafkaConsumer(bootstrap_servers=['%s:%s' % (self._host, self._port)])
         return receiver
 
@@ -135,7 +145,8 @@ class KafkaConsumer(IConsume):
         for msg in self.receiver:
             log.debug(msg)
             try:
-                callback(str(msg.value, encoding='utf-8'))
+                # callback(str(msg.value, encoding='utf-8'))
+                callback(msg.value)
             except Exception as err:
                 log.exception(err)
             if stop_event is not None and stop_event.is_set():

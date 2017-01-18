@@ -32,6 +32,8 @@
             <!-- Group tabs. New or Edit. -->
             <div id="tabs-stack">
                 <h4>Customize Plugin Stack</h4>
+                <p> Create a stack. Add some plugins into this stack. Use it in <a href="{% url "send" %}">Send</a> page to filter out
+                plugins you don't want to use in some scenarios.</p>
                 <p> "{{ reversed_stack_name }}" is a reserved name. It will contains all plugins.</p>
                 <ul>
                 </ul>
@@ -65,10 +67,11 @@
                 "<span class='ui-icon ui-icon-close' role='presentation'>Remove</span> " +
                 "</li>";
         var tabContent = "" +
-                {% for plugin in plugins %}
+                {% for category, c_plugins in plugins.items %}
+                    {% for name, plugin in c_plugins.items %}
                     "<label for='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>{{ plugin.name }}</label>" +
-                    "<input type='checkbox' class='plugin-sel' name='stack{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}' id='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>"
-                    +
+                    "<input type='checkbox' class='plugin-sel' name='stack{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}' id='chk{{ splitter }}#{stack}{{ splitter }}{{ plugin.name }}'>" +
+                    {% endfor %}
                 {% endfor %}
                 "";
         var tabCounter = 0;

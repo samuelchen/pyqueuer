@@ -3,8 +3,6 @@
 
 """
 Sample for updating json fields.
-
-Created on 12/7/2016
 """
 
 import simplejson as json

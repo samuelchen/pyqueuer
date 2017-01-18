@@ -31,8 +31,8 @@ class RabbitMQConnection(IConnect):
             self._user = self.config[RabbitConfKeys.user]
             self._password = self.config[RabbitConfKeys.password]
             self._vhost = self.config[RabbitConfKeys.vhost]
-        except:
-            raise Exception('You must specify the configurations in dict')
+        except KeyError as err:
+            raise KeyError('You must specify the configurations in a dict. %s' % err)
 
     def connect(self):
         retries = 0
@@ -57,6 +57,14 @@ class RabbitMQConnection(IConnect):
         if self._conn is not None:
             self._conn.close()
 
+    def create_producer(self):
+        return RabbitMQProducer(conn=self)
+
+    def create_consumer(self):
+        return RabbitMQConsumer(conn=self)
+
+    # -- additional methods --
+
     def open_channel(self):
         if self.auto_reconnect and (not self._conn or not self._conn.is_open):
             self.connect()
@@ -72,7 +80,7 @@ class RabbitMQProducer(IProduce):
     # ------------------------
     @property
     def channel(self):
-        if not self._channel:
+        if not self._channel or self._channel.is_closed:
             self._channel = self.connection.open_channel()
         return self._channel
 
@@ -97,6 +105,7 @@ class RabbitMQProducer(IProduce):
         :return:
         """
         log.debug('Sending message "%s"' % msg)
+        assert msg is not None
         channel = self.channel
 
         assert 'queue' in kwargs or ('topic' in kwargs and 'key' in kwargs)
@@ -120,7 +129,13 @@ class RabbitMQProducer(IProduce):
                                       delivery_mode=mode))
             log.info('Message sent to exchange topic "%s" key "%s".' % (topic, key))
 
-        channel.close()
+        # channel.close()
+        # self._channel = None
+
+    # def close(self):
+    #     if self._channel:
+    #         self._channel.close()
+    #     self._channel = None
 
 
 class RabbitMQConsumer(IConsume):

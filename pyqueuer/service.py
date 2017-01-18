@@ -62,7 +62,7 @@ class ServiceWrapper(object):
         self.on_quit = lambda wrapper: log.debug('%s is quiting' % wrapper)
 
     def start(self):
-        log.debug('Starting service %s ...' % self.__class__)
+        log.debug('Starting service %s ...' % type(self._service).__name__)
         self._t.start()
 
     def stop(self):

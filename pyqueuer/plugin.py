@@ -13,7 +13,7 @@ import importlib
 from yapsy.PluginManager import PluginManager
 from yapsy.PluginFileLocator import PluginFileAnalyzerMathingRegex
 import re
-from collections import OrderedDict
+from .utils import PropertyDict
 
 re_valid_plugin_name = re.compile(r'^[a-zA-Z0-9_\-]+$')
 
@@ -41,61 +41,138 @@ class PluginBase(object):
         pass
 
 
-class MessageAutoUpdater(PluginBase):
+class PluginException(Exception):
+    pass
+
+# --- individual message updater ---
+
+
+class Updater(PluginBase):
+
+    __metaclass__ = abc.ABCMeta
+
+    _key = None
+
+    @property
+    def key(self):
+        return self._key
+
+    @key.setter
+    def key(self, value):
+        self._key = value
+
+    @abc.abstractproperty
+    def is_auto_value(self):
+        pass
+
+
+class MessageAutoUpdater(Updater):
     """
     Plugin to automatically update a message without new value.
     New value will be automatically generated.
     """
     __metaclass__ = abc.ABCMeta
 
-    _key = None
-
     @abc.abstractmethod
     def update(self, message):
         pass
-
-    @property
-    def key(self):
-        return self._key
-
-    @key.setter
-    def key(self, value):
-        self._key = value
 
     @property
     def is_auto_value(self):
         return True
 
 
-class MessageUpdater(PluginBase):
+class MessageUpdater(Updater):
     """
     Plugin to update a message with given new value.
     """
     __metaclass__ = abc.ABCMeta
-
-    _key = None
 
     @abc.abstractmethod
     def update(self, message, value):
         pass
 
     @property
-    def key(self):
-        return self._key
-
-    @key.setter
-    def key(self, value):
-        self._key = value
-
-    @property
     def is_auto_value(self):
         return False
+
+# --- batch messages updater ---
+
+
+class BatchUpdater(PluginBase):
+    """
+    BatchUpdater is a plugin for batch producing messages.
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    __func = None
+    __msg = None
+    __origin_msg = None
+
+    @abc.abstractproperty
+    def is_auto_value(self):
+        pass
+
+    @abc.abstractmethod
+    def run(self, *args, **kwargs):
+        """
+        Plugin entry point. Implement this method for you plugin logic.
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        pass
+
+    @property
+    def send_func(self):
+        """
+        The callable function used to send message.
+        :return:
+        """
+        return self.__func
+
+    @send_func.setter
+    def send_func(self, func):
+        if not callable(func):
+            raise PluginException('BatchUpdater.send_func must be callable which accepts an argument of message.')
+
+        self.__func = func
+
+    @property
+    def origin_message(self):
+        return self.__origin_msg
+
+    @origin_message.setter
+    def origin_message(self, value):
+        self.__origin_msg = value
+
+    def send(self):
+        """ Send the message. If message is not updated, use origin message.
+        :return:
+        """
+        if not self.__func:
+            raise PluginException('send_func is None.')
+        msg = self.__msg
+        if not msg:
+            msg = self.__origin_msg
+        self.__func(msg)
+
+    def update_message(self, message):
+        """update the message to be sent"""
+        self.__msg = message
+
+
+# --- management ---
 
 
 class PluginFileAnalyzerMathingRegexWithInfoProperty(PluginFileAnalyzerMathingRegex):
     """
-    An analyzer that targets plugins decribed by files whose name match a given regex.
+    An analyzer that targets plugins described by files whose name match a given regex.
     And obtain PluginInfo from module properties.
+    This class will be used to identify what file is plugin. It will also update some
+    meta information for plugins.
+    Used "Plugins" manager.
     """
 
     def getInfosDictFromPlugin(self, dirpath, filename):
@@ -136,16 +213,21 @@ class Plugins(object):
     """
 
     __plugin_mgr = None
-    __metas = None
+    __plugins = PropertyDict()
+    __plugin_list = None
+    # __metas = None
+
+    __categories = {
+        'AutoUpdaters': MessageAutoUpdater,
+        'Updaters': MessageUpdater,
+        'Batches': BatchUpdater,
+    }
 
     @classmethod
     def __get_mgr(cls):
         if not cls.__plugin_mgr:
             analyzer = PluginFileAnalyzerMathingRegexWithInfoProperty('file_name_analyzer', r'^.*\.py$')
-            mgr = PluginManager(categories_filter={
-                'AutoUpdaters': MessageAutoUpdater,
-                'Updaters': MessageUpdater
-            })
+            mgr = PluginManager(categories_filter=cls.__categories)
             mgr.setPluginPlaces(["plugins"])
             mgr.getPluginLocator().removeAllAnalyzer()
             mgr.getPluginLocator().appendAnalyzer(analyzer)
@@ -155,33 +237,99 @@ class Plugins(object):
 
         return cls.__plugin_mgr
 
-    @classmethod
-    def all(cls, category=None):
-        mgr = cls.__get_mgr()
-        if category:
-            return mgr.getPluginsOfCategory(category)
-        else:
-            return mgr.getAllPlugins()
+    # @classmethod
+    # def _all(cls, category=None):
+    #     mgr = cls.__get_mgr()
+    #     if category:
+    #         return mgr.getPluginsOfCategory(category)
+    #     else:
+    #         return mgr.getAllPlugins()
+
+    # @classmethod
+    # def all_metas(cls, category=None, refresh=False):
+    #     if refresh or not cls.__metas:
+    #         plugins = {}
+    #         for plugin in cls.all(category=category):
+    #             plugins[plugin.name] = PropertyDict({
+    #                 "name": plugin.name,
+    #                 "author": plugin.author,
+    #                 "version": plugin.version,
+    #                 "description": plugin.description,
+    #                 "plugin_object": plugin.plugin_object,
+    #
+    #                 "checked": False,
+    #                 # "key": plugin.plugin_object.key,
+    #                 # "value": None,
+    #             })
+    #         cls.__metas = OrderedDict(sorted(plugins.items(), key=lambda x: x[0]))
+    #     return cls.__metas
 
     @classmethod
-    def all_metas(cls, category=None, refresh=False):
-        if refresh or not cls.__metas:
+    def __load(cls, category, refresh=False):
+        if refresh or category not in cls.__plugins:
             plugins = {}
-            for plugin in cls.all(category=category):
-                plugins[plugin.name] = {
+            for plugin in cls.__get_mgr().getPluginsOfCategory(category):
+                plugins[plugin.name] = PropertyDict({
                     "name": plugin.name,
                     "author": plugin.author,
                     "version": plugin.version,
                     "description": plugin.description,
                     "plugin_object": plugin.plugin_object,
 
-                    "checked": False,
-                    "key": plugin.plugin_object.key,
-                    "value": None,
-                }
-            cls.__metas = OrderedDict(sorted(plugins.items(), key=lambda x: x[1].name))
-        return cls.__metas
+                    # "checked": False,
+                    "category": category,
+                    # "key": plugin.plugin_object.key,
+                    # "value": None,
+                })
+            cls.__plugins[category] = PropertyDict(sorted(plugins.items(), key=lambda x: x[0]))
+        return cls.__plugins[category]
 
+    # @classmethod
+    # def all_in_list(cls, refresh=False):
+    #     if refresh or not cls.__plugin_list:
+    #         plugins = []
+    #         for plugin in cls.__get_mgr().getAllPlugins():
+    #             plugins.append(PropertyDict({
+    #                 "name": plugin.name,
+    #                 "author": plugin.author,
+    #                 "version": plugin.version,
+    #                 "description": plugin.description,
+    #                 "plugin_object": plugin.plugin_object,
+    #
+    #                 "checked": False,
+    #                 # "category": category,
+    #                 # "key": plugin.plugin_object.key,
+    #                 # "value": None,
+    #             }))
+    #         cls.__plugin_list = sorted(plugins, key=lambda x: x.name)
+    #     return cls.__plugin_list
+
+    @classmethod
+    def all(cls, refresh=False):
+        for category in cls.__categories.keys():
+            if refresh or category not in cls.__plugins:
+                cls.__load(category=category, refresh=refresh)
+        return cls.__plugins
+
+    @classmethod
+    def batch_updaters(cls, refresh=False):
+        cls.__load(category='Batches', refresh=refresh)
+        return cls.__plugins['Batches']
+
+    @classmethod
+    def individual_updaters(cls, refresh=False):
+        cls.__load(category='Updaters', refresh=refresh)
+        cls.__load(category='AutoUpdaters', refresh=refresh)
+        updaters = {}
+        updaters.update(cls.__plugins['Updaters'])
+        updaters.update(cls.__plugins['AutoUpdaters'])
+        updaters = PropertyDict(sorted(updaters.items(), key=lambda x: x[0]))
+        return updaters
+
+    # @classmethod
+    # def updaters(cls, refresh=False):
+    #     cls.__load(category='Updaters', refresh=refresh)
+    #     return cls.__plugins['Updaters']
 
 __all__ = [
     MessageUpdater,

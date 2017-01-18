@@ -125,16 +125,18 @@
 
                 <!-- hidden plugin input forms -->
                 <ul id="all-plugins" style="display: none">
-                {% for plugin in plugins.values %}
+                {% for category, c_plugins in plugins.items %}
+                    {% for name, plugin in c_plugins.items %}
                     <li id="form-{{ plugin.name }}">
                         <label for="chk{{ splitter }}{{ plugin.name }}">{{ plugin.name }}</label>
                         <input type="checkbox" id="chk{{ splitter }}{{ plugin.name }}"
                                name="plugin{{ splitter }}{{ plugin.name }}" class="plugin-sel"
-                               {% if plugin.checked %}checked="true"{% endif %}>
+                               {% if plugin.name in checked %}checked="true"{% endif %}>
                         {% if not plugin.plugin_object.is_auto_value %}
                         <input type="text" name="pluginv{{ splitter }}{{ plugin.name }}" value="{{ plugin.value |default:''}}">
                         {% endif %}
                     </li>
+                    {% endfor %}
                 {% endfor %}
                 </ul>
 
@@ -245,7 +247,7 @@
 
     // validations
     function validate() {
-        {% for plugin in plugins %}
+        {% for plugin in plugins.values %}
         {% if not plugin.plugin_object.is_auto_value %}
         var chk = $("chk{{ splitter }}{{ plugin.name }}");
         console.log(chk);
@@ -253,7 +255,7 @@
         console.log(chk.next());
         if (chk.prop("checked"))
             if (!chk.next().val())
-                return false
+                return false;
         {% endif %}
         {% endfor %}
         return true;
