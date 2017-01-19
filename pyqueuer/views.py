@@ -148,8 +148,13 @@ def send(request):
                 msg = msg_data
             elif msg_source == 'File':
                 file = os.path.sep.join([ucfg.get(GeneralConfKeys.data_store), msg_file])
-                with open(file, 'tr') as f:
-                    msg = f.read()
+                try:
+                    with open(file, 'tr') as f:
+                        msg = f.read()
+                except Exception as err:
+                    e = 'Fail to read file %s. Error: %s' % (file, str(err))
+                    errors.append(e)
+                    log.debug(e)
 
             # plugins stacks
             stack = request.POST['stack']
