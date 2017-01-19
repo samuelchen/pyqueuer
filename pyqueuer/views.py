@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 from django.contrib.auth.forms import UserCreationForm
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
+from django.urls import reverse
 from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys, KafkaConfKeys
 from .models import PluginStackModel
 from .utils import PropertyDict
@@ -408,7 +409,7 @@ def register(request):
 
 
 # --- convenience functions ---
-
+import django.urls
 def _handle_mq_selection_tabs(request):
     """
     Handle the POST request for MQ selection tabs.
@@ -418,15 +419,20 @@ def _handle_mq_selection_tabs(request):
     :return: tuple of ("MQ selection form fields dict", "Parameters dict for MQ clients/services")
     """
     ucfg = UserConf(user=request.user)
+    is_send_page = request.path == django.urls.reverse('send')
 
     params = {}
     form_fields = {
         "mq": request.POST['mq'] if 'mq' in request.POST else MQTypes.RabbitMQ,
         "mq_idx": request.POST['mq-idx'] if 'mq-idx' in request.POST else 0,
-        "rabbit_queue": request.POST['rabbit_queue'] if 'rabbit_queue' in request.POST else ucfg.get(RabbitConfKeys.queue_in),
-        "rabbit_topic": request.POST['rabbit_topic'] if 'rabbit_topic' in request.POST else ucfg.get(RabbitConfKeys.topic_in),
-        "rabbit_key": request.POST['rabbit_key'] if 'rabbit_key' in request.POST else ucfg.get(RabbitConfKeys.key_in),
-        "kafka_topic": request.POST['kafka_topic'] if 'kafka_topic' in request.POST else ucfg.get(KafkaConfKeys.topic_in),
+        "rabbit_queue": request.POST['rabbit_queue'] if 'rabbit_queue' in request.POST else (
+            ucfg.get(RabbitConfKeys.queue_out) if is_send_page else ucfg.get(RabbitConfKeys.queue_in)),
+        "rabbit_topic": request.POST['rabbit_topic'] if 'rabbit_topic' in request.POST else (
+            ucfg.get(RabbitConfKeys.topic_out) if is_send_page else ucfg.get(RabbitConfKeys.topic_in)),
+        "rabbit_key": request.POST['rabbit_key'] if 'rabbit_key' in request.POST else (
+            ucfg.get(RabbitConfKeys.key_out) if is_send_page else ucfg.get(RabbitConfKeys.key_in)),
+        "kafka_topic": request.POST['kafka_topic'] if 'kafka_topic' in request.POST else (
+            ucfg.get(KafkaConfKeys.topic_out) if is_send_page else ucfg.get(KafkaConfKeys.topic_in)),
         "kafka_key": request.POST['kafka_key'] if 'kafka_key' in request.POST else '',
     }
     if request.method == 'POST':
