@@ -51,6 +51,6 @@ You may use it either in development for MQ sender/receiver simulation or in tes
 * Kafka
 
 
-### Demo
+### Use cases
 
-* TODO: <link to demo>.
+* [Case 1](docs/case1.md)
