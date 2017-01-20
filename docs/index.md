@@ -27,4 +27,4 @@ You may use it either in development to simulate the MQ sender/receiver or in te
 
 ### Design
 
-* see [this](design.md)
+* See [this](design.md)
