@@ -16,8 +16,8 @@
                     <tr>
                     <td style="width:20%;white-space:nowrap"><label for="{{ name }}">{{ name | _2space }}:</label></td>
                     <td style="width:75%"><input class="ui-widget-content" style="width:95%" id="{{ name }}" name="{{ name }}" type="text"
-                               value="{{ value }}" origin="{{ value }}"></td>
-                    <td><a href="#" onclick="$('#{{ name }}').val('{{ value }}');">[x]</a></td>
+                               value="{{ value }}"></td>
+                    <td><a href="#" tabindex="-1" onclick="$('#{{ name }}').val('{{ value | escapejs }}');"><i class="ui-icon ui-icon-refresh"></i></a></td>
                     </tr>
                     {% endfor %}
                 {% endif %}
@@ -26,7 +26,8 @@
             </div>
             <div class="content">
                 <hr/>
-                <input type="submit" class="ui-button" name="btn-setting-submit" value="Save"/>
+                <button type="submit" name="btn-setting-submit">Save</button>
+                <button type="reset">Reset</button>
             </div>
         </form>
 
@@ -46,5 +47,8 @@
 {% endblock %}
 
 {% block script %}
+    <script language="JavaScript">
+        $("button").button();
+    </script>
 
 {% endblock %}
