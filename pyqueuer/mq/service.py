@@ -52,9 +52,11 @@ class MQConsumerService(ServiceMixin):
             kwargs['callback'] = on_msg
 
         # Assign name. TODO: change the name.
+        name_keys = ['queue', 'topic', 'key', 'autosave']
         sb = [str(type(self._consumer)).split('.')[-1][:-2]]
         for k, v in kwargs.items():
-            sb.append(', %s=%s' % (k, v))
+            if k in name_keys:
+                sb.append(', %s=%s' % (k, v))
         self._name = ''.join(sb)
 
         # consuming
