@@ -40,7 +40,7 @@ You may use it either in development for MQ sender/receiver simulation or in tes
 ### Tutorial
 
 * Setting
-* Send a message
+* [Send a message](docs/send.md)
 * Receive messages
 * Customize plugin Stack
 
