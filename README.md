@@ -2,9 +2,11 @@
 
 PyQueuer is a tool for automatically sending/receiving message to/from MQ.
 
-You may use it either in development for MQ sender/receiver simulation or in test for automation.
+You may use it either in development to simulate the MQ sender/receiver or in test for automation.
 
 [Fork me on GitHub](https://github.com/samuelchen/pyqueuer)
+
+[Check the docs](docs/index.md)
 
 ### Features:
 
@@ -36,21 +38,3 @@ You may use it either in development for MQ sender/receiver simulation or in tes
 
 ![Plugin Page](docs/readme/plugin.png)
 
-
-### Tutorial
-
-* Setting
-* [Send a message](docs/send.md)
-* Receive messages
-* Customize plugin Stack
-
-
-### Supported MQ:
-
-* RabbitMQ
-* Kafka
-
-
-### Use cases
-
-* [Case 1](docs/case1.md)
