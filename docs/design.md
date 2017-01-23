@@ -54,6 +54,7 @@ Some other views are referenced to _Django built-in views/forms_:
 ### MQ module
 
 MQ module defines all message queue (MQ) clients. It abstract the MQ client to a [some interfaces](#interfaces) (interfaces are actually base classes with some implementations).
+
  [``MQClientFactory``](#message-queue-client-factory) is provided to convenience creating instances. MQ types are defined in an enumerator class [``MQTyes``](#message-queue-types).
 
 To use it, check the [usage examples](#usage)
@@ -118,6 +119,7 @@ Now PyQueuer supports the following types.
 	* ``get_confs``: _static method_. To create an return a dict contains all required parameters for previous ``conf`` argument. The data are from ``Config`` model which were defined in ``setting`` page by user. Accepts arguments:
 		* ``mq_type``: To specify the type of this client. (value of **MQType**)
 		* ``user``: The user object respects current user. It could from ``request.user`` or ``User.objects.get`` and etc.
+
 #### Usage
 
 Basically you could use ``MQClientFactory`` to create a MQ client. Before that, you should implement the producer/consumer corresponding to specify MQ.
