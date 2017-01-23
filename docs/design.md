@@ -54,6 +54,7 @@ Some other views are referenced to _Django built-in views/forms_:
 ### MQ module
 
 MQ module defines all message queue (MQ) clients. It abstract the MQ client to a [some interfaces](#interfaces) (interfaces are actually base classes with some implementations).
+
  [``MQClientFactory``](#message-queue-client-factory) is provided to convenience creating instances. MQ types are defined in an enumerator class [``MQTyes``](#message-queue-types).
 
 To use it, check the [usage examples](#usage)
