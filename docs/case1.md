@@ -61,7 +61,7 @@ Simply provide 4 log entries for each level from "debug" to "error"
 	![4 consumers](case1/case1_consume.png)
 8. Start a new browser/tab for ``/plugin`` page.
 9. Add a stack _"case1-logsvc"_ for this app and save it.
-	![plugin stack](case1/case1_plugin1.png)
+	![plugin stack](case1/case1_plugin.png)
 10. Start a new browser/tab for ``/send`` page.
 11. Switch to _"Data"_ tab for message source. Switch to _"RabbitMQ"_ tab for MQ. Switch to _"case1-logsvc"_ tab for plugin stack. ![](docs/case1/case1_send.png)
 12. Paste the "debug" log message from [Test Data](#test-data) to it and send.
