@@ -1,6 +1,7 @@
 ## Use Case 1
 
-This is a very simple case to demo how you leverage PyQueuer to develop one module (logging process service) in a big system.
+This is a very simple case to demo how you leverage PyQueuer to develop one module (logging process service)
+in a big system based on MQ. You will never require other modules.
 
 #### Scenario
 
@@ -76,9 +77,7 @@ Simply provide 4 log entries for each level from "debug" to "error"
 	![](case1/case1_consume_error.png)
 16. You may also store 4 files for message in ``data_store`` folder to select in _"File"_ tab for sending.
 
-So if you would like to develop, you may use PyQueuer to send incoming message and check outcome message for validate.
-
-This case is too simple to replace by some simple command/script in console. In next cases, we could use it in more complex case.
+This case is too simple to replace by some simple command/script in console. In next cases, we could use it in more complex scenario.
 
 --End--
 
