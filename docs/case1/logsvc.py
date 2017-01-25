@@ -9,23 +9,8 @@ import pika
 import configparser
 from time import sleep
 import re
-import datetime
 import simplejson as json
 from collections import namedtuple
-
-
-# class LogEntry(object):
-# level = 'NOTSET'
-#     timestamp = ''
-#     module = ''
-#     line = -1
-#     message = ''
-#
-#     def __repr__(self):
-#         return '{"level": "%s", "timestamp": "%s", "module": "%s", "line": %d, "message": "%s"}' % (
-#             self.level, self.timestamp, self.module, self.line, self.message
-#         )
-
 
 LogEntry = namedtuple('LogEntry', ['level', 'timestamp', 'module', 'line', 'message'])
 
@@ -49,7 +34,6 @@ class LogService(object):
             vhost = self.cf.get('rabbit', 'vhost')
             user = self.cf.get('rabbit', 'user')
             pwd = self.cf.get('rabbit', 'password')
-            # print(host, port, vhost, user, pwd)
 
             cred = pika.PlainCredentials(username=user, password=pwd)
             parms = pika.ConnectionParameters(host=host, port=port, virtual_host=vhost, credentials=cred)
@@ -85,12 +69,6 @@ class LogService(object):
     def send(self, log_obj):
         print('> Sending message ...')
         channel = self.connection.channel()
-        # channel.exchange_declare(exchange=self._topic, type='topic')
-        # result = channel.queue_declare(exclusive=True)
-        # queue = result.method.queue
-        # channel.queue_bind(exchange=self._topic,
-        # queue_name=queue,
-        #                    routing_key=log_obj.level)
         msg = json.dumps(log_obj)
         print(msg)
         channel.basic_publish(exchange=self._topic,
@@ -109,10 +87,6 @@ class LogService(object):
         matches = LogService._regx.split(string=log_str, maxsplit=5)
         log = LogEntry(
             level=matches[0].lower(),
-            # timestamp=datetime.datetime.strptime(
-            #     '%s %s' % (matches[1][1:], matches[2][:-1]),
-            #     '%Y-%m-%d %H:%M:%S,%f'
-            # ),
             timestamp='%s %s' % (matches[1][1:], matches[2][:-1]),
             module=matches[3],
             line=int(matches[4][1:-1]),

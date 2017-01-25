@@ -3,6 +3,11 @@
 {% block title %}Consume{% endblock %}
 
 {% block head %}
+    <style type="text/css">
+        .msg {
+            background-color: whitesmoke;
+        }
+    </style>
     <link href="{% static 'pyqueuer/json/s.css' %}" rel="stylesheet">
     <script src="{% static 'pyqueuer/json/c.js' %}"></script>
 {% endblock %}
@@ -92,7 +97,7 @@
                                     panel.html("");
                                     $.each(messages, function(idx, val) {
                                         if (typeof val.message == "string")
-                                            panel.append('<p>' + val.time.substr(11,12) + ' ' + val.message + '</p>');
+                                            panel.append('<p class="msg">' + val.time.substr(11,12) + ' ' + val.message + '</p>');
                                         else {
                                             var tm = val.time.substr(11,12);
                                             panel.append('<p>' + tm + '</p>');

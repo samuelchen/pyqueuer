@@ -60,13 +60,13 @@ class MQConsumerService(ServiceMixin):
         self._name = ''.join(sb)
 
         # consuming
-        output.write('[*] Waiting for messages.')
+        output.write('Waiting for messages.')
 
         consumer = self._consumer
         consumer.connection.connect()
 
         consumer.consume(*args, **kwargs)
-        output.write('[*] Consumer quit.')
+        output.write('Consumer quit.')
 
         consumer.connection.disconnect()
         log.debug('Consumer quit')
