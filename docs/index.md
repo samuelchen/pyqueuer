@@ -22,7 +22,7 @@ You may use it either in development to simulate the MQ sender/receiver or in te
 
 ### Use cases
 
-* [Case 1](docs/case1.md)
+* [Case 1](case1.md)
 
 
 ### Design
