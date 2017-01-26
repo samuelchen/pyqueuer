@@ -7,6 +7,11 @@ Some configurations for testing
 
 from pyqueuer.utils import PropertyDict
 
+conf_tester = PropertyDict(
+    user="test",
+    password="test"
+)
+
 conf_rabbit = PropertyDict(
     host="192.168.0.93",
     port=5672,
