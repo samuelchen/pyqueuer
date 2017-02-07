@@ -5,14 +5,14 @@
 Tests for MQ
 """
 
-import unittest
+from django.test import TestCase
 from pyqueuer.mq import MQTypes
 from pyqueuer.mq.rabbit import RabbitConfKeys
 from pyqueuer.mq import MQClientFactory
 from .conf import conf_rabbit
 
 
-class TestRabbitMQ(unittest.TestCase):
+class TestRabbitMQ(TestCase):
     def setUp(self):
         conf = {
             RabbitConfKeys.host: conf_rabbit.host,

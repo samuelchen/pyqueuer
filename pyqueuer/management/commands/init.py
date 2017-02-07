@@ -11,6 +11,7 @@ from django.core.management.commands import migrate, makemigrations
 from django.contrib.auth.management.commands import createsuperuser
 from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
+from django.conf import settings
 import sys
 
 
@@ -32,7 +33,7 @@ class Command(BaseCommand):
             action='store',
             type=str,
             dest='password',
-            help='Admin password.',
+            help='Admin password. If not specified, will prompt to enter.',
         )
 
         parser.add_argument(
@@ -40,7 +41,7 @@ class Command(BaseCommand):
             action='store',
             type=str,
             dest='email',
-            default='anonymous@localhost.localdomain',
+            default='anonymous@localhost',
             help='Admin user email.',
         )
 
@@ -49,16 +50,16 @@ class Command(BaseCommand):
             action='store_true',
             dest='tester',
             default=False,
-            help='Initialize a tester user.',
+            help='Initialize a tester user. Username and password are both "%s" (settings.TESTER).' % settings.TESTER,
         )
 
-        parser.add_argument(
-            '--quiet', '-q',
-            action='store_true',
-            dest='quiet',
-            default=False,
-            help='Quiet mode. Answer "YES" for all critical question. Use RANDOM password.',
-        )
+        # parser.add_argument(
+        #     '--quiet', '-q',
+        #     action='store_true',
+        #     dest='quiet',
+        #     default=False,
+        #     help='Quiet mode. Answer "YES" for all critical question. Use default values for other arguments.',
+        # )
 
     def handle(self, *args, **options):
 
@@ -67,26 +68,26 @@ class Command(BaseCommand):
         pwd = options['password']
         email = options['email']
         tester = options['tester']
-        quiet = options['quiet']
+        # quiet = options['quiet']
 
-        if quiet:
-            if not pwd:
-                sys.stderr.write('You must specify --password argument if --quiet enabled.\r\n')
-                return
+        # if quiet:
+        #     if not pwd:
+        #         sys.stderr.write('You must specify --password argument if --quiet enabled.\r\n')
+        #         return
 
         print('Initialize Database ...')
-        rt = call_command(makemigrations.Command(), 'pyqueuer')
-        rt = call_command(migrate.Command())
+        call_command(makemigrations.Command(), 'pyqueuer')
+        call_command(migrate.Command())
 
-        print('Creating Admin user "%s" ...' % user)
+        print('Creating admin user "%s" ...' % user)
         try:
-            if quiet or pwd:
-                rt = call_command(createsuperuser.Command(), '--noinput', username=user, email=email)
+            if pwd:
+                call_command(createsuperuser.Command(), '--noinput', username=user, email=email)
                 u = User.objects.get(username__exact=user)
                 u.set_password(raw_password=pwd)
                 u.save()
             else:
-                rt = call_command(createsuperuser.Command(), username=user, email=email)
+                call_command(createsuperuser.Command(), username=user, email=email)
 
         except IntegrityError:
             sys.stderr.write('  Admin with same name is already existed.\r\n')
@@ -94,15 +95,16 @@ class Command(BaseCommand):
             print('  Admin user "%s" created. Email is "%s"' % (user, email))
 
         if tester:
-            print('Creating tester user ...')
+            name = pwd = settings.TESTER
+            print('Creating test user "%s"...' % name)
             try:
-                u = User.objects.create(username='tester')
-                u.email = 'tester@localhost.localdomain'
-                u.set_password(raw_password='tester')
+                u = User.objects.create(username=name)
+                u.email = email
+                u.set_password(raw_password=pwd)
                 u.is_active = True
                 u.save()
             except IntegrityError:
                 sys.stderr.write('  Tester is already existed.\r\n')
             else:
-                print('  Tester is created.')
+                print('  Tester is created. Username and password are both "%s".' % name)
 

@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath( __file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 # Quick-start development settings - unsuitable for production
@@ -80,6 +80,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'test.sqlite3'),
+        # 'TEST': {
+        #     'NAME': os.path.join(BASE_DIR, 'test.sqlite3'),
+        # },
     }
 }
 
@@ -127,6 +130,7 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+TESTER = 'tester'
 
 LOGGING = {
     'version': 1,

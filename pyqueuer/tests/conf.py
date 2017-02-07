@@ -7,6 +7,11 @@ Some configurations for testing
 
 from pyqueuer.utils import PropertyDict
 
+settings_file = 'settings_test.py'
+conf_testdb = PropertyDict(
+    path="test.sqlite3",
+)
+
 conf_tester = PropertyDict(
     user="test",
     password="test"
