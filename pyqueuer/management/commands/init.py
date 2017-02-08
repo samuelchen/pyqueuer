@@ -91,6 +91,7 @@ class Command(BaseCommand):
 
         except IntegrityError:
             sys.stderr.write('  Admin with same name is already existed.\r\n')
+            return
         else:
             print('  Admin user "%s" created. Email is "%s"' % (user, email))
 
@@ -105,6 +106,8 @@ class Command(BaseCommand):
                 u.save()
             except IntegrityError:
                 sys.stderr.write('  Tester is already existed.\r\n')
+                return
             else:
                 print('  Tester is created. Username and password are both "%s".' % name)
 
+        return
