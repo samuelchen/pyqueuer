@@ -32,7 +32,7 @@ class Command(BaseCommand):
             action='store',
             type=str,
             dest='user',
-            help='User name to login. Must be specified.',
+            help='User name to login. If not specified, will prompt to enter.',
         )
 
         parser.add_argument(
@@ -68,8 +68,8 @@ class Command(BaseCommand):
         if user and user.is_active:
             pass
         else:
-            sys.stderr.write('You are not authorized with given user name and password.\r\n')
-            return
+            # sys.stderr.write('You are not authorized with given user name and password.\r\n')
+            return 'You are not authorized with given user name and password.'
 
         ucf = UserConf(user=user)
         sb = []

@@ -6,7 +6,8 @@ RabbitMQ client module
 """
 
 from .base import IConnect, IProduce, IConsume
-from ..models import RabbitConfKeys
+from .base import MQAuthorizeException, MQConnectException
+from ..consts import RabbitConfKeys
 import pika
 import logging
 from time import sleep
@@ -27,7 +28,7 @@ class RabbitMQConnection(IConnect):
 
         try:
             self._host = self.config[RabbitConfKeys.host]
-            self._port = int(self.config[RabbitConfKeys.port])
+            self._port = int(self.config[RabbitConfKeys.port] or 5672)
             self._user = self.config[RabbitConfKeys.user]
             self._password = self.config[RabbitConfKeys.password]
             self._vhost = self.config[RabbitConfKeys.vhost]
@@ -46,12 +47,15 @@ class RabbitMQConnection(IConnect):
                 self._conn = pika.BlockingConnection(parameters)
             except pika.exceptions.ConnectionClosed:
                 if retries >= 3 or not self.auto_reconnect:
-                    raise pika.exceptions.ConnectionClosed('Can not connect RabbitMQ %s:%s' % (self._host, self._port))
+                    raise MQConnectException('Can not connect RabbitMQ %s:%s' % (self._host, self._port))
                 else:
                     log.warn('Fail connecting RabbitMQ server %s:%s. Retry in %d seconds.'
                              % (self._host, self._port, interval))
                     sleep(interval)
                     interval *= 2
+            except pika.exceptions.ProbableAuthenticationError:
+                raise MQAuthorizeException('You are not authorized as user "%s" at virtual host "%s" on RabbitMQ %s:%s'
+                                           % (self._user, self._vhost, self._host, self._port))
 
     def disconnect(self):
         if self._conn is not None:
@@ -95,17 +99,17 @@ class RabbitMQProducer(IProduce):
     # High level methods
     # ------------------------
 
-    def produce(self, msg, **kwargs):
+    def produce(self, message, **kwargs):
         """
         Send message with given keyword args.
-        :param msg: Message to be sent.
+        :param message: Message to be sent.
         :param kwargs: "queue" or "topic" + "key". If all specified, accept "queue".
                         "content_type" (optional): Specify content type. Default is "plain/text".
                         "mode" (optional): Specify delivery mode. Default is 2. (Check Rabbit Doc)
         :return:
         """
-        log.debug('Sending message "%s"' % msg)
-        assert msg is not None
+        log.debug('Sending message "%s"' % message)
+        assert message is not None
         channel = self.channel
 
         assert 'queue' in kwargs or ('topic' in kwargs and 'key' in kwargs)
@@ -116,14 +120,14 @@ class RabbitMQProducer(IProduce):
         mode = kwargs['mode'] if 'mode' in kwargs else 2
 
         if queue:
-            channel.basic_publish('', queue, msg,
+            channel.basic_publish('', queue, message,
                                   pika.BasicProperties(
                                       content_type=content_type,
                                       delivery_mode=mode))
             log.info('Message sent to queue "%s".' % queue)
         else:
             channel.basic_publish(topic,
-                                  key, msg,
+                                  key, message,
                                   pika.BasicProperties(
                                       content_type=content_type,
                                       delivery_mode=mode))

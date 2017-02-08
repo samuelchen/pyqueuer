@@ -5,24 +5,26 @@
 Tests for MQ
 """
 
+import unittest
 from django.test import TestCase
+from django.contrib.auth import authenticate
+from django.core.management import call_command
 from pyqueuer.mq import MQTypes
-from pyqueuer.mq.rabbit import RabbitConfKeys
 from pyqueuer.mq import MQClientFactory
-from .conf import conf_rabbit
+from .conf import test_user, test_data
 
 
 class TestRabbitMQ(TestCase):
     def setUp(self):
-        conf = {
-            RabbitConfKeys.host: conf_rabbit.host,
-            RabbitConfKeys.port: conf_rabbit.port,
-            RabbitConfKeys.user: conf_rabbit.user,
-            RabbitConfKeys.password: conf_rabbit.password,
-            RabbitConfKeys.vhost: conf_rabbit.vhost,
-        }
+
+        call_command('init', password=test_data['admin_pwd'], tester=True)
+
+        self.mqtype = MQTypes.RabbitMQ
+        self.user = authenticate(username=test_user, password=test_user)
+        conf = MQClientFactory.get_confs(self.mqtype, self.user)
         self.mq = MQClientFactory.create_connection(MQTypes.RabbitMQ, conf)
         self.mq.connect()
+        self.testdata = test_data[self.mqtype]
 
     def tearDown(self):
         self.mq.disconnect()
@@ -30,18 +32,18 @@ class TestRabbitMQ(TestCase):
     def test_send_to_queue(self):
         msg = 'my first message.'
         producer = self.mq.create_producer()
-        producer.produce(msg, queue=conf_rabbit.queue_out)
-        consumer = self.mq.create_consumer()
+        producer.produce(msg, queue=self.testdata['queue_out'])
+        self.mq.create_consumer()
         self.assertEqual(True, True)
 
     def test_send_to_exchange(self):
         msg = 'my second message to topic & key.'
         producer = self.mq.create_producer()
-        producer.produce(msg, topic=conf_rabbit.topic_out, key=conf_rabbit.key_out)
+        producer.produce(msg, topic=self.testdata['topic_out'], key=self.testdata['key_out'])
         self.assertEqual(True, True)
 
 
-class KafkaTestCase(unittest.TestCase):
+class KafkaTestCase(TestCase):
     pass
 
 

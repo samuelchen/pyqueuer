@@ -9,7 +9,7 @@ import unittest
 from django.test import TestCase
 from django.core.management import call_command
 from django.contrib.auth import authenticate
-from django.conf import settings
+from ..conf import test_user
 
 
 class TestCLIInit(TestCase):
@@ -46,7 +46,7 @@ class TestCLIInit(TestCase):
 
     def test_init_tester(self):
         pwd = '234567'
-        t = settings.TESTER
+        t = test_user
         email = 'anonymous@localhost'
         call_command('init', password=pwd, tester=True)
         tester = authenticate(username=t, password=t)

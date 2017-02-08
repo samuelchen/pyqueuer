@@ -15,10 +15,12 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.contrib.auth.forms import UserCreationForm
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
 from django.urls import reverse
-from .models import UserConf, ConfKeys, RabbitConfKeys, GeneralConfKeys, KafkaConfKeys
+from .consts import RabbitConfKeys, GeneralConfKeys, KafkaConfKeys, ConfKeys
+from .models import UserConf
 from .models import PluginStackModel
 from .utils import PropertyDict
 from .mq import MQClientFactory, MQTypes
+from .mq import MQException
 from .mq.service import MQConsumerService
 from .service import ServiceManager
 from .plugin import Plugins
@@ -189,7 +191,9 @@ def send(request):
                             errors.append(e)
                             log.warn(e + 'Message is: %s' % the_msg)
                         plugin_args[p.name] = args
+
                 client.produce(the_msg, **mq_params)
+
 
             sent = False
             # handle batch updater plugins to override sending process
@@ -221,6 +225,9 @@ def send(request):
 
     except KeyError as err:
         errors.append('You must specify %s' % str(err))
+    except MQException as err:
+        log.exception(err)
+        errors.append(str(err))
 
     files = OrderedDict()
     data_store_path = ucfg.get(GeneralConfKeys.data_store)
