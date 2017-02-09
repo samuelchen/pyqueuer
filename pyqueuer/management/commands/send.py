@@ -58,10 +58,7 @@ class Command(BaseCommand):
             nargs='+',
             type=str,
             metavar='arguments_for_mq',
-            help='MQ arguments as "queue=logs [topic=new ...]" (no space around "=").\r\n'
-                 '"queue" or "topic" + "key". If all specified, accept "queue";\r\n'
-                 '"content_type" (optional): Specify content type. Default is "plain/text";\r\n'
-                 '"mode" (optional): Specify delivery mode. Default is 2. (Check Rabbit Doc);\r\n',
+            help='MQ arguments "queue=logs [topic=new ...]" (no space around "=").'
         )
 
     def handle(self, *args, **options):

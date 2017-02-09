@@ -44,6 +44,14 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
+            '--import', '-i',
+            action='store',
+            type=str,
+            dest='imp',
+            help='Import user configs from file. Format same as --list. (use --list>file to generate).',
+        )
+
+        parser.add_argument(
             'conf',
             nargs='*',
             type=str,
@@ -57,6 +65,7 @@ class Command(BaseCommand):
         show_list = options['list']
         conf = options['conf']
         key = options['get']
+        imp = options['imp']
 
         if not name:
             name = input('Please enter your user name:')
@@ -84,31 +93,49 @@ class Command(BaseCommand):
 
         elif conf:
             # set configurations
-            opts = []
-            for token in conf:
-                opt = token.split('=')
-                if len(opt) != 2:
-                    # sys.stderr.write('Invalid syntax around "%s" \r\n' % token)
-                    return 'Invalid syntax around "%s"' % token
-                opt[0] = opt[0].strip()
-                opts.append(opt)
-
-            for opt in opts:
-                is_valid = False
-                for confs in ConfKeys.values():
-                    if opt[0] in confs:
-                        is_valid = True
-                        break
-                if is_valid:
-                    ucf.set(opt[0], opt[1])
-                else:
-                    sys.stderr.write('"%s" is not a valid config name.' % opt[0])
+            return self.set_configs(user=user, tokens=conf)
 
         elif key:
             # get value of an config by given name
             return ucf.get(key)
+        elif imp:
+            # import from file.
+            try:
+                with open(imp, 'rt') as f:
+                    return self.set_configs(user=user, tokens=f.readlines())
+            except (FileNotFoundError, PermissionError, FileExistsError):
+                return 'File is not accessible.'
+
         else:
             # sys.stderr.write('Please specify arguments such as --list or --get.\r\n')
             return 'Please specify arguments such as --list or --get.'
 
         return ''
+
+    @staticmethod
+    def set_configs(user, tokens):
+        ucf = UserConf(user=user)
+        opts = []
+        for token in tokens:
+            token = token.strip()
+            if not token:
+                continue
+            opt = token.split('=')
+            if len(opt) != 2:
+                return 'Invalid syntax around "%s"' % token
+            opt[0] = opt[0].strip()
+            opt[1] = opt[1].strip()
+            opts.append(opt)
+
+        for opt in opts:
+            is_valid = False
+            for confs in ConfKeys.values():
+                if opt[0] in confs.values():
+                    is_valid = True
+                    break
+            if is_valid:
+                ucf.set(opt[0], opt[1])
+            else:
+                sys.stderr.write('"%s" is not a valid config name.\r\n' % opt[0])
+
+        return 'Configuration modified.'

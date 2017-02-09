@@ -125,14 +125,15 @@ class RabbitMQProducer(IProduce):
                                       content_type=content_type,
                                       delivery_mode=mode))
             log.info('Message sent to queue "%s".' % queue)
-        else:
+        elif topic and key:
             channel.basic_publish(topic,
                                   key, message,
                                   pika.BasicProperties(
                                       content_type=content_type,
                                       delivery_mode=mode))
             log.info('Message sent to exchange topic "%s" key "%s".' % (topic, key))
-
+        else:
+            raise ValueError('You must specify either "queue" or "topic"+"key" arguments.')
         # channel.close()
         # self._channel = None
 

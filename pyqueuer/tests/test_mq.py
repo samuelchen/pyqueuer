@@ -9,22 +9,24 @@ import unittest
 from django.test import TestCase
 from django.contrib.auth import authenticate
 from django.core.management import call_command
-from pyqueuer.mq import MQTypes
+from django.conf import settings
+from pyqueuer.consts import MQTypes, ConfKeys
 from pyqueuer.mq import MQClientFactory
-from .conf import test_user, test_data
+from pyqueuer.models import UserConf
+from .base import MQTestMixin
 
 
-class TestRabbitMQ(TestCase):
+class TestRabbitMQ(TestCase, MQTestMixin):
     def setUp(self):
+        call_command('init', password='123456', tester=True)
 
-        call_command('init', password=test_data['admin_pwd'], tester=True)
-
-        self.mqtype = MQTypes.RabbitMQ
-        self.user = authenticate(username=test_user, password=test_user)
+        tester = settings.TESTER
+        self.user = authenticate(username=tester, password=tester)
+        self.mqtype = self.guess_mq_type(user=self.user)
+        self.ucf = UserConf(self.user)
         conf = MQClientFactory.get_confs(self.mqtype, self.user)
         self.mq = MQClientFactory.create_connection(MQTypes.RabbitMQ, conf)
         self.mq.connect()
-        self.testdata = test_data[self.mqtype]
 
     def tearDown(self):
         self.mq.disconnect()
@@ -32,14 +34,15 @@ class TestRabbitMQ(TestCase):
     def test_send_to_queue(self):
         msg = 'my first message.'
         producer = self.mq.create_producer()
-        producer.produce(msg, queue=self.testdata['queue_out'])
+        producer.produce(msg, queue=self.ucf.get(ConfKeys[self.mqtype].queue_out))
         self.mq.create_consumer()
         self.assertEqual(True, True)
 
     def test_send_to_exchange(self):
         msg = 'my second message to topic & key.'
         producer = self.mq.create_producer()
-        producer.produce(msg, topic=self.testdata['topic_out'], key=self.testdata['key_out'])
+        producer.produce(msg, topic=self.ucf.get(ConfKeys[self.mqtype].topic_out),
+                         key=self.ucf.get(ConfKeys[self.mqtype].key_out))
         self.assertEqual(True, True)
 
 

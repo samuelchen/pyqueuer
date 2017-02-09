@@ -2,6 +2,7 @@
 .tox
 *.sqlite3
 migrations
+tester.json
 
 
 # Byte-compiled / optimized / DLL files
