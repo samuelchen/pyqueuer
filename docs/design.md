@@ -1,11 +1,11 @@
 ## Design
-==========
 
 PyQueuer is a Django based APP. It's built on Python 3.
 
+
 ### Authorization 
 
-PyQueuer has a RBAC user system which is fully leverage Django ``User`` model.
+PyQueuer has a RBAC user system which is fully leveraging Django ``User`` model.
 
 Only 2 pages are created follow Django's _authorization guide_. These pages are build with Django _built-in forms_.
 
@@ -13,6 +13,7 @@ Only 2 pages are created follow Django's _authorization guide_. These pages are 
 * Register page
 
 The templates are under **templates/registration/**. View names are **"login"** and **"register"**. We also need to configure **"urls.py"** by following the Django guide.
+
 
 ### Web UI
 
@@ -166,7 +167,30 @@ or consuming example:
 
 
 ### Plugin system (yapsy)
+
+
 ### Service
+
+
 ### Utilities
+
+
 ### Models
-### Command Line
+
+
+### Command Line Interface
+
+PyQueuer supports command line interfaces (CLI). It's depends on Django command modules.
+
+pyqueuer.py is a copy of manage.py. It's created to implement system level CLI (os command).
+It's modified to remove default Django commands.
+
+It supports the following sub-commands:
+
+* init - to initialize the databse, super-user, tester-user and so on.
+* config - to access the user configurations (settings page). Supports list, set, get, import and export.
+* send - to produce a message to a MQ. Supports from string data or file.
+* consume - to consume message from a MQ.
+
+
+### Unittest

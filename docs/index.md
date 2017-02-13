@@ -6,25 +6,26 @@ You may use it either in development to simulate the MQ sender/receiver or in te
 
 [Fork me on GitHub](https://github.com/samuelchen/pyqueuer)
 
-### Supported MQ:
+## Supported MQ:
 
 * RabbitMQ
 * Kafka
 
 
-### Guide
+## Guide
 
 * Setting
 * Send a message
 * Receive messages
 * Customize plugin Stack
+* Command line interface (CLI)
 
 
-### Use cases
+## Use cases
 
 * [Case 1](case1.md) - Develop a module in a big system.
 
 
-### Design
+## Design
 
 * See [this](design.md)
