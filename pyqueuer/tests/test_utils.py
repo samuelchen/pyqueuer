@@ -15,14 +15,28 @@ class TestUtils(unittest.TestCase):
 
     def test_PropertyDict(self):
         x = PropertyDict(a=1, b=2, d=4, f=8)
-        for k, v in x.items():
-            print('%s=%s' % (k, v), end=', ')
+        # for k, v in x.items():
+        #     print('%s=%s' % (k, v), end=', ')
         self.assertEqual(x['a'], 1)
         self.assertEqual(x.b, 2)
         del x.a
         self.assertNotIn('a', x)
         x['c'] = 3
         self.assertEqual(x.c, 3)
+
+        y = PropertyDict((
+            ('a', 2),
+            ('b', 4),
+            ('c', 8),
+        ))
+        z = [x for x in y.values()]
+        self.assertEqual(z[0], 2)
+        self.assertEqual(z[2], 8)
+
+        y['d'] = 16
+        del y['b']
+        z = [x for x in y.values()]
+        self.assertEqual(z[2], 16)
 
     def test_OutputBuffer(self):
         buf = OutputBuffer(maxlen=5)
