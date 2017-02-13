@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'pyqueuer.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'test.sqlite3'),
         # 'TEST': {
         #     'NAME': os.path.join(BASE_DIR, 'test.sqlite3'),
         # },
@@ -171,7 +171,7 @@ LOGGING = {
         },
         'pyqueuer': {
             'handlers': ['console'],
-            'level': 'WARNING',
+            'level': 'DEBUG',
         },
         'django.db.backends': {
             'handlers': ['console'],

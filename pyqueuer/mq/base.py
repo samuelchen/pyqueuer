@@ -147,3 +147,15 @@ class IConsume(object):
     @abc.abstractmethod
     def stop(self):
         pass
+
+
+class MQException(Exception):
+    pass
+
+
+class MQConnectException(MQException):
+    pass
+
+
+class MQAuthorizeException(MQException):
+    pass

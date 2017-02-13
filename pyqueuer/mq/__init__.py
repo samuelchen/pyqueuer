@@ -7,15 +7,11 @@ mq modules defines Message Queue clients and some tools.
 """
 
 from ..utils import PropertyDict
-from .rabbit import RabbitMQConnection  #, RabbitMQConsumer, RabbitMQProducer
-from .kafka import KafkaConnection  #, KafkaProducer, KafkaConsumer
-from ..models import UserConf, RabbitConfKeys, KafkaConfKeys
-
-
-MQTypes = PropertyDict(
-    RabbitMQ='RabbitMQ',
-    Kafka='Kafka'
-)
+from .rabbit import RabbitMQConnection
+from .kafka import KafkaConnection
+from ..models import UserConf
+from .base import MQException, MQAuthorizeException, MQConnectException
+from ..consts import MQTypes, RabbitConfKeys, KafkaConfKeys
 
 
 class MQClientFactory():
@@ -118,4 +114,5 @@ class MQClientFactory():
 __all__ = [
     MQTypes,
     MQClientFactory,
+    MQException, MQAuthorizeException, MQConnectException,
 ]

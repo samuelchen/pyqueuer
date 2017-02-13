@@ -6,7 +6,7 @@ kafka modules defines Kafka client classes
 """
 
 from .base import IConnect, IProduce, IConsume
-from ..models import KafkaConfKeys
+from ..consts import KafkaConfKeys
 import kafka
 import logging
 log = logging.getLogger(__name__)

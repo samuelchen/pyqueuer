@@ -1,7 +1,8 @@
 .idea
 .tox
-db.sqlite3
+*.sqlite3
 migrations
+tester_config.ini
 
 
 # Byte-compiled / optimized / DLL files
