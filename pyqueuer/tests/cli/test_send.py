@@ -34,7 +34,7 @@ class TestCLISend(TestCase, MQTestMixin):
         name = pwd = self.tester
         mqtype = self.mqtype
         queue = self.ucf.get(ConfKeys[mqtype].queue_out)
-        data = 'PyQueuer unittest sends message.'
+        data = 'PyQueuer unittest sends message to queue.'
 
         # miss arguments
         with self.assertRaises(CommandError) as err:
@@ -72,6 +72,25 @@ class TestCLISend(TestCase, MQTestMixin):
 
         rt = call_command('send', 'queue=%s' % queue, user=name, password=pwd, type=mqtype, data=data)
         self.assertIn('Message sent', rt)
+
+    def test_send_to_exchange(self):
+        name = pwd = self.tester
+        mqtype = self.mqtype
+        topic = self.ucf.get(ConfKeys[mqtype].topic_out)
+        key = self.ucf.get(ConfKeys[mqtype].key_out)
+        data = 'PyQueuer unittest sends message to exchange.'
+
+        rt = call_command('send', 'topic=%s' % topic,  'key=%s' % key, user=name, password=pwd, type=mqtype, data=data)
+        self.assertIn('Message sent', rt)
+
+    def test_send_file(self):
+        name = pwd = self.tester
+        mqtype = self.mqtype
+        queue = self.ucf.get(ConfKeys[mqtype].queue_out)
+        file = os.path.sep.join([settings.BASE_DIR, 'tester.json'])
+        rt = call_command('send', 'queue=%s' % queue, user=name, password=pwd, type=mqtype, file=file)
+        self.assertIn('Message sent', rt)
+
 
 if __name__ == '__main__':
     unittest.main()

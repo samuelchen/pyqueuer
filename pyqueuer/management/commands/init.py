@@ -20,40 +20,43 @@ import tempfile
 from ...utils import PropertyDict
 from ...consts import MQTypes, GeneralConfKeys, RabbitConfKeys, KafkaConfKeys
 from ...models import UserConf
+from ...consts import ConfKeys
 
 
-# Preparation Data
-#   admin_password: Used to initialize test database. Ignore it in most cases.
-#   mq_type: Select which MQ to performing tests on. Check MQTypes.
-#   test_user_config: The configurations for tester. Config it in test.json before test.
-#   "RabbitMQ/Kafka/...": (generated from MQTypes) Arguments for for test.
-#                           Will be used in test depends on your "mq_type".
-prepare_data = PropertyDict((
-    ("test_user_config", PropertyDict((
-        (GeneralConfKeys.data_store, os.path.sep.join([tempfile.gettempdir(), 'data_store'])),
-        (GeneralConfKeys.result_store, os.path.sep.join([tempfile.gettempdir(), 'result_store'])),
-
-        (RabbitConfKeys.host, ""),
-        (RabbitConfKeys.port, 5672),
-        (RabbitConfKeys.user, ""),
-        (RabbitConfKeys.password, ""),
-        (RabbitConfKeys.vhost, ""),
-        (RabbitConfKeys.queue_in, ""),
-        (RabbitConfKeys.topic_in, ""),
-        (RabbitConfKeys.key_in, ""),
-        (RabbitConfKeys.queue_out, ""),
-        (RabbitConfKeys.topic_out, ""),
-        (RabbitConfKeys.key_out, ""),
-
-        (KafkaConfKeys.host, ""),
-        (KafkaConfKeys.port, "9092"),
-        (KafkaConfKeys.topic_in, ""),
-        (KafkaConfKeys.topic_out, ""),
-    ))),
-))  # use PropertyDict( tuple ) to keep order.
+# # Preparation Data
+# #   admin_password: Used to initialize test database. Ignore it in most cases.
+# #   mq_type: Select which MQ to performing tests on. Check MQTypes.
+# #   test_user_config: The configurations for tester. Config it in test.json before test.
+# #   "RabbitMQ/Kafka/...": (generated from MQTypes) Arguments for for test.
+# #                           Will be used in test depends on your "mq_type".
+# prepare_data = PropertyDict((
+#     ("test_user_config", PropertyDict((
+#         (GeneralConfKeys.data_store, os.path.sep.join([tempfile.gettempdir(), 'data_store'])),
+#         (GeneralConfKeys.result_store, os.path.sep.join([tempfile.gettempdir(), 'result_store'])),
+#
+#         (RabbitConfKeys.host, ""),
+#         (RabbitConfKeys.port, 5672),
+#         (RabbitConfKeys.user, ""),
+#         (RabbitConfKeys.password, ""),
+#         (RabbitConfKeys.vhost, ""),
+#         (RabbitConfKeys.queue_in, ""),
+#         (RabbitConfKeys.topic_in, ""),
+#         (RabbitConfKeys.key_in, ""),
+#         (RabbitConfKeys.queue_out, ""),
+#         (RabbitConfKeys.topic_out, ""),
+#         (RabbitConfKeys.key_out, ""),
+#
+#         (KafkaConfKeys.host, ""),
+#         (KafkaConfKeys.port, "9092"),
+#         (KafkaConfKeys.topic_in, ""),
+#         (KafkaConfKeys.topic_out, ""),
+#     ))),
+# ))  # use PropertyDict( tuple ) to keep order.
 
 
 class Command(BaseCommand):
+
+    default_tester_config = os.path.sep.join([settings.BASE_DIR, 'tester_config.ini'])
 
     def add_arguments(self, parser):
 
@@ -92,20 +95,21 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            '--tester_json', '-j',
+            '--tester-config-file', '-f',
             action='store',
             type=str,
-            dest='tester_json',
-            default=os.path.sep.join([settings.BASE_DIR, 'tester.json']),
-            help='Specify user configuration json file. Default is "tester.json" in "%s".' % settings.BASE_DIR
+            dest='tester_config_file',
+            default=Command.default_tester_config,
+            help='Specify tester configuration file to be imported while creating tester.'
+                 'Default is "tester_config.ini" in "%s". Must with --tester=True.' % settings.BASE_DIR
         )
 
         parser.add_argument(
-            '--create_tester_json', '-c',
+            '--create-tester-config', '-c',
             action='store_true',
-            dest='create_tester_json',
+            dest='create_tester_config',
             default=False,
-            help='Create user configuration json file for tester.'
+            help='Create tester configuration file.'
         )
 
     def handle(self, *args, **options):
@@ -115,14 +119,19 @@ class Command(BaseCommand):
         pwd = options['password']
         email = options['email']
         tester = options['tester']
-        tester_json = options['tester_json']
-        create_tester_json = options['create_tester_json']
+        tester_config = options['tester_config_file']
+        create_tester_config = options['create_tester_config']
 
-        # Create tester json will return immediately without init db
-        if create_tester_json:
-            with open(tester_json, 'wt') as f:
-                json.dump(prepare_data, f, indent=4)
-            return 'Tester configuration json file is created at %s' % tester_json
+        # Create tester config will return immediately without init db
+        if create_tester_config:
+            with open(tester_config, 'wt') as f:
+                f.write(os.linesep.join(['# Tester configurations (tester is set in settings.py).',
+                                         '# Update me before run auto-unittests.',
+                                         '# Unittest will select the configured MQ to perform tests on.']))
+                for section, confs in ConfKeys.items():
+                    for k, v in confs.items():
+                        f.write('%s= %s' % (v, os.linesep))
+            return 'Tester configuration file is created at %s' % tester_config
 
         # init db & migrate
         print('Initialize Database ...')
@@ -141,7 +150,7 @@ class Command(BaseCommand):
                 call_command(createsuperuser.Command(), username=user, email=email)
 
         except IntegrityError:
-            sys.stderr.write('  Admin with same name is already existed.' + os.path.sep)
+            sys.stderr.write('  Admin with same name is already existed.' + os.linesep)
         else:
             print('  Admin user "%s" created. Email is "%s"' % (user, email))
 
@@ -156,19 +165,27 @@ class Command(BaseCommand):
                 u.is_active = True
                 u.save()
             except IntegrityError:
-                sys.stderr.write('  Tester is already existed.' + os.path.sep)
+                sys.stderr.write('  Tester is already existed.' + os.linesep)
             else:
                 print('  Tester is created. Username and password are both "%s".' % name)
 
             # load tester configurations from tester json
-            name = pwd = settings.TESTER
-            with open(tester_json, 'rt') as f:
-                tester_dict = json.load(f)
-
-            user = authenticate(username=name, password=pwd)
-            ucf = UserConf(user=user)
-            for k, v in tester_dict['test_user_config'].items():
-                ucf.set(k, v)
-            return 'Tester configuration loaded from json %s' % tester_json
+            # Use "manage.py config --import my_config.ini" to import config only.
+            if tester_config:
+                print('Load config for tester.')
+                options = {
+                    "import": tester_config,
+                    "user": settings.TESTER,
+                    "password": settings.TESTER
+                }
+                call_command('config', **options)
+            # with open(tester_config, 'rt') as f:
+            #     tester_dict = json.load(f)
+            #
+            # user = authenticate(username=name, password=pwd)
+            # ucf = UserConf(user=user)
+            # for k, v in tester_dict['test_user_config'].items():
+            #     ucf.set(k, v)
+            # return 'Tester configuration loaded from json %s' % tester_config
 
         return
