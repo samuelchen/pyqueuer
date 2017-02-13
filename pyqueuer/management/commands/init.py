@@ -95,10 +95,10 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            '--tester-config-file', '-f',
+            '--config-file', '-f',
             action='store',
             type=str,
-            dest='tester_config_file',
+            dest='config_file',
             default=Command.default_tester_config,
             help='Specify tester configuration file to be imported while creating tester.'
                  'Default is "tester_config.ini" in "%s". Must with --tester=True.' % settings.BASE_DIR
@@ -119,7 +119,7 @@ class Command(BaseCommand):
         pwd = options['password']
         email = options['email']
         tester = options['tester']
-        tester_config = options['tester_config_file']
+        tester_config = options['config_file']
         create_tester_config = options['create_tester_config']
 
         # Create tester config will return immediately without init db
@@ -175,6 +175,7 @@ class Command(BaseCommand):
                 print('Load config for tester.')
                 options = {
                     "import": tester_config,
+                    "config_file": tester_config,
                     "user": settings.TESTER,
                     "password": settings.TESTER
                 }

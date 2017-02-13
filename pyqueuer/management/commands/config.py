@@ -46,20 +46,26 @@ class Command(BaseCommand):
 
         parser.add_argument(
             '--import', '-i',
-            action='store',
-            type=str,
+            action='store_true',
             dest='import',
-            metavar='CONFIG_FILE',
-            help='Import user configs from file. Format same as --export.',
+            default=False,
+            help='Import user configs from file. Use --config-file to specify file name.',
         )
 
         parser.add_argument(
             '--export', '-e',
+            action='store_true',
+            dest='export',
+            default=False,
+            help='Export user configs to file. Use --config-file to specify file name.',
+        )
+
+        parser.add_argument(
+            '--config-file', '-f',
             action='store',
             type=str,
-            dest='export',
-            metavar='CONFIG_FILE',
-            help='Export user configs to file. Format same as --import.',
+            dest='config_file',
+            help='Specify a config file name which will be used with --import or --export.',
         )
 
         parser.add_argument(
@@ -78,6 +84,10 @@ class Command(BaseCommand):
         key = options['get']
         imp = options['import']
         expt = options['export']
+        config_file = options['config_file']
+
+        if not config_file:
+            config_file = '%s_config.ini' % name
 
         if not name:
             name = input('  Please enter your user name:')
@@ -113,14 +123,14 @@ class Command(BaseCommand):
         elif imp:
             # import from file.
             try:
-                with open(imp, 'rt') as f:
+                with open(config_file, 'rt') as f:
                     return self.set_configs(user=user, tokens=f.readlines())
             except (FileNotFoundError, PermissionError, FileExistsError):
                 return '  File is not accessible.'
         elif expt:
             # export to file
             try:
-                with open(expt, 'wt') as f:
+                with open(config_file, 'wt') as f:
                     for opt in ucf.all():
                         f.write('%s=%s' % (opt.name, opt.value))
                         f.write(os.linesep)
@@ -128,7 +138,7 @@ class Command(BaseCommand):
                 return '  File is not accessible.'
         else:
             # sys.stderr.write('Please specify arguments such as --list or --get.\r\n')
-            return '  Please specify arguments such as --list or --get.'
+            return '  Please specify arguments such as --list, --get and so on.'
 
         return ''
 

@@ -12,6 +12,7 @@ from django.conf import settings
 import os
 from pyqueuer.consts import ConfKeys
 
+
 class TestCLIConfig(TestCase):
 
     def setUp(self):
@@ -23,7 +24,7 @@ class TestCLIConfig(TestCase):
     def test_config(self):
         name = pwd = settings.TESTER
         rt = call_command('config', user=name, password=pwd)
-        self.assertIn('Please specify arguments such as --list or --get', rt)
+        self.assertIn('Please specify arguments', rt)
 
         rt = call_command('config', user=name, password=pwd, list=True)
         lines = rt.split('\n')
@@ -50,12 +51,13 @@ class TestCLIConfig(TestCase):
         # rt = call_command('config', user=name, password=pwd, list=True)
         # with open(config_file, 'wt') as f:
         #     f.write(rt)
-        call_command('config', user=name, password=pwd, export=config_file)
+        call_command('config', user=name, password=pwd, export=True, config_file=config_file)
 
         options = {
             "user": name,
             "password": pwd,
-            "import": config_file,
+            "import": True,
+            "config_file": config_file,
         }
         rt = call_command('config', **options)
         self.assertIn('Configuration modified', rt)
