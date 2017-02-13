@@ -22,10 +22,10 @@ class TestRabbitMQ(TestCase, MQTestMixin):
 
         tester = settings.TESTER
         self.user = authenticate(username=tester, password=tester)
-        self.mqtype = self.guess_mq_type(user=self.user)
+        self.mqtype = MQTypes.RabbitMQ
         self.ucf = UserConf(self.user)
         conf = MQClientFactory.get_confs(self.mqtype, self.user)
-        self.mq = MQClientFactory.create_connection(MQTypes.RabbitMQ, conf)
+        self.mq = MQClientFactory.create_connection(self.mqtype, conf)
         self.mq.connect()
 
     def tearDown(self):

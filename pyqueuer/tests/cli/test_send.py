@@ -11,9 +11,8 @@ from django.core.management import call_command
 from django.core.management import CommandError
 from django.conf import settings
 from django.contrib.auth import authenticate
-from pyqueuer.consts import ConfKeys, RabbitConfKeys, KafkaConfKeys
+from pyqueuer.consts import ConfKeys, MQTypes
 from pyqueuer.models import UserConf
-import tempfile
 import os
 from ..base import MQTestMixin
 
@@ -25,16 +24,16 @@ class TestCLISend(TestCase, MQTestMixin):
         self.tester = settings.TESTER
         self.user = authenticate(username=self.tester, password=self.tester)
         self.ucf = UserConf(self.user)
-        self.mqtype = self.guess_mq_type(self.user)
+        self.mqtypes = self.guess_mq_type(self.user)
+        self.mqtype = self.mqtypes[0]
 
     def tearDown(self):
         pass
 
-    def test_send(self):
+    def test_errors(self):
         name = pwd = self.tester
         mqtype = self.mqtype
-        queue = self.ucf.get(ConfKeys[mqtype].queue_out)
-        data = 'PyQueuer unittest sends message to queue.'
+        data = 'PyQueuer unittest sends message.'
 
         # miss arguments
         with self.assertRaises(CommandError) as err:
@@ -42,53 +41,69 @@ class TestCLISend(TestCase, MQTestMixin):
         self.assertIn('arguments are required', str(err.exception))
 
         with self.assertRaises(CommandError) as err:
-            call_command('send', user=name, password=pwd, queue=queue)
+            call_command('send', user=name, password=pwd, queue='test')
         self.assertIn('arguments are required', str(err.exception))
 
         with self.assertRaises(CommandError) as err:
-            call_command('send', user=name, password=pwd, queue=queue, type=mqtype)
+            call_command('send', user=name, password=pwd, topic='test', type=mqtype)
         self.assertIn('arguments are required', str(err.exception))
 
         # miss MQ type (even with incorrect arguments)
         rt = call_command('send', 'a=b', user=name, password=pwd)
         self.assertEqual(rt, 'You must specify MQ type.')
 
-        # miss MQ type
-        rt = call_command('send', 'queue=%s' % queue, user=name, password=pwd)
-        self.assertEqual(rt, 'You must specify MQ type.')
-
         # miss data or file
-        rt = call_command('send', 'queue=%s' % queue, user=name, password=pwd, type=mqtype)
+        rt = call_command('send', 'a=b', user=name, password=pwd, type=mqtype)
         self.assertEqual(rt, 'You must specify either --data or --file for reading message.')
 
         # miss data or file (even with incorrect MQ type)
-        rt = call_command('send', 'queue=%s' % queue, user=name, password=pwd, type=mqtype.lower())
+        rt = call_command('send', 'a=b', user=name, password=pwd, type=mqtype.lower())
         self.assertEqual(rt, 'You must specify either --data or --file for reading message.')
 
         # incorrect MQ type (even only lower case)
         with self.assertRaises(RuntimeError) as err:
-            call_command('send', 'queue=%s' % queue, user=name, password=pwd, type=mqtype.lower(), data=data)
+            call_command('send', 'a=b', user=name, password=pwd, type=mqtype.lower(), data=data)
         self.assertIn('Unsupported MQ type', str(err.exception))
 
-        rt = call_command('send', 'queue=%s' % queue, user=name, password=pwd, type=mqtype, data=data)
-        self.assertIn('Message sent', rt)
+    def test_send(self):
 
-    def test_send_to_exchange(self):
-        name = pwd = self.tester
-        mqtype = self.mqtype
+        if MQTypes.RabbitMQ in self.mqtypes:
+            self._send_rabbit()
+        if MQTypes.Kafka in self.mqtypes:
+            self._send_kafka()
+
+    def _send_rabbit(self):
+        mqtype = MQTypes.RabbitMQ
+        queue = self.ucf.get(ConfKeys[mqtype].queue_out)
         topic = self.ucf.get(ConfKeys[mqtype].topic_out)
         key = self.ucf.get(ConfKeys[mqtype].key_out)
-        data = 'PyQueuer unittest sends message to exchange.'
+        data = '{ "sender": "pyqueuer", "mq":"RabbitMQ", "desc":"unittest"}'
+        file = os.path.sep.join([settings.BASE_DIR, 'requirements.txt'])
 
-        rt = call_command('send', 'topic=%s' % topic,  'key=%s' % key, user=name, password=pwd, type=mqtype, data=data)
+        # send data to exchange
+        rt = call_command('send', 'topic=%s' % topic,  'key=%s' % key,
+                          user=self.tester, password=self.tester, type=mqtype, data=data)
         self.assertIn('Message sent', rt)
 
-    def test_send_file(self):
-        name = pwd = self.tester
-        mqtype = self.mqtype
-        queue = self.ucf.get(ConfKeys[mqtype].queue_out)
-        file = os.path.sep.join([settings.BASE_DIR, 'tester.json'])
-        rt = call_command('send', 'queue=%s' % queue, user=name, password=pwd, type=mqtype, file=file)
+        # send file to queue
+        rt = call_command('send', 'queue=%s' % queue,
+                          user=self.tester, password=self.tester, type=mqtype, file=file)
+        self.assertIn('Message sent', rt)
+
+    def _send_kafka(self):
+        mqtype = MQTypes.Kafka
+        topic = self.ucf.get(ConfKeys[mqtype].topic_out)
+        data = '{ "sender": "pyqueuer", "mq":"Kafka", "desc":"unittest"}'
+        file = os.path.sep.join([settings.BASE_DIR, 'requirements.txt'])
+
+        # send data to topic
+        rt = call_command('send', 'topic=%s' % topic,
+                          user=self.tester, password=self.tester, type=mqtype, data=data)
+        self.assertIn('Message sent', rt)
+
+        # send file to topic
+        rt = call_command('send', 'topic=%s' % topic,
+                          user=self.tester, password=self.tester, type=mqtype, file=file)
         self.assertIn('Message sent', rt)
 
 

@@ -177,6 +177,7 @@ class RabbitMQConsumer(IConsume):
                         "callback" (optional): Callback function accepts argument "body" to process message body.
                         "stop_event" (optional): Instance of threading.Event() for stopping consuming external.
                                         If None, consume once.
+                        TODO: "durable"
         :return:
         """
         assert 'queue' in kwargs or ('topic' in kwargs and 'key' in kwargs)
@@ -186,6 +187,7 @@ class RabbitMQConsumer(IConsume):
         key = kwargs['key'] if 'key' in kwargs else None
         callback = kwargs['callback'] if 'callback' in kwargs else lambda x: log.debug('Received message:  %s' % x)
         stop_event = kwargs['stop_event'] if 'stop_event' in kwargs else None
+        # TODO: durable = kwargs['durable'] if 'durable' in kwargs else False
 
         channel = self.channel
         queue_name = queue
@@ -193,7 +195,7 @@ class RabbitMQConsumer(IConsume):
             channel.queue_declare(queue=queue_name, durable=True)
             log.debug('consuming queue %s' % queue_name)
         else:
-            channel.exchange_declare(exchange=topic, type='topic')
+            channel.exchange_declare(exchange=topic, type='topic', durable=True)
             result = channel.queue_declare(exclusive=True)
             queue_name = result.method.queue
             channel.queue_bind(exchange=topic,
