@@ -13,6 +13,6 @@ before_script:
   # no for now
 script:
   # init for migrations
-  - python manage.py init
+  - python manage.py init -p 123456 -t
   # Normal tests
   - python manage.py test
