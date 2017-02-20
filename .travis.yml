@@ -12,5 +12,7 @@ install:
 before_script:
   # no for now
 script:
+  # init for migrations
+  - python manage.py init
   # Normal tests
   - python manage.py test
