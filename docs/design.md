@@ -187,10 +187,16 @@ It's modified to remove default Django commands.
 
 It supports the following sub-commands:
 
-* init - to initialize the databse, super-user, tester-user and so on.
+* init - to initialize the database, super-user, tester-user and so on.
 * config - to access the user configurations (settings page). Supports list, set, get, import and export.
 * send - to produce a message to a MQ. Supports from string data or file.
 * consume - to consume message from a MQ.
 
 
 ### Unittest
+
+Django_Nose is used for testing.nUse "python pyqueuer.py init -t" to create a tester user.
+And tester_config.ini is added (can create use "python pyqueuer.py config -c" to generate")
+for loading config when creating the tester.
+
+CloudAMQP (cloudamqp.com) provides free plan to create a cloud RabbitMQ. Unittest will use it.

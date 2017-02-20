@@ -1,7 +1,7 @@
 language: python
 python:
   - "3.4"   # working version
-  - "2.7"
+#  - "2.7"
 env:
 #  - DJANGO_VERSION=1.7.8
   - DJANGO_VERSION=1.10.2   # working version
@@ -12,7 +12,7 @@ install:
 before_script:
   # no for now
 script:
-  # init for migrations
+  # init db (to avoid migration error)
   - python manage.py init -p 123456 -t
   # Normal tests
   - python manage.py test
