@@ -171,7 +171,7 @@ LOGGING = {
         },
         'pyqueuer': {
             'handlers': ['console'],
-            'level': 'WARNING',
+            'level': 'DEBUG' if DEBUG else 'WARNING',
         },
         'django.db.backends': {
             'handlers': ['console'],
