@@ -1,5 +1,9 @@
 # PyQueuer
 
+[![Build Status](https://travis-ci.org/samuelchen/pyqueuer.svg?branch=master)](https://travis-ci.org/samuelchen/pyqueuer)
+[![Travis](https://img.shields.io/travis/samuelchen/pyqueuer.svg?branch=master?style=flat-square)](https://travis-ci.org/samuelchen/pyqueuer)
+
+
 PyQueuer is a tool for automatically sending/receiving message to/from MQ.
 
 You may use it either in development to simulate the MQ sender/receiver or in test for automation.

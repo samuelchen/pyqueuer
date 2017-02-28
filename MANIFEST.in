@@ -1,0 +1,15 @@
+
+# Include a single file
+include manage.py
+include pyqueuer.py
+include README.md
+include requirements.txt
+include requirements.test.txt
+
+# Include the files (pattern) in a folder
+recursive-include docs *
+recursive-include pyqueuer *
+
+# If using Python 2.6 or less, then have to include package data, even though
+# it's already declared in setup.py
+# include sample/*.dat

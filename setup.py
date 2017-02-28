@@ -31,16 +31,21 @@ setup(
     license="GPL 3.0",
     url=URL,
 
-    package_dir={'': '.'},
-    packages=find_packages(exclude=["tests.*", "tests"]),
-    package_data={
-        '': ['*.md', '*.txt', '*.py', '*.ini'],
-    },
+    # package_dir={'': '.'},
+    packages=find_packages(),
+    # package_data={
+    #     '': ['*.md', '*.txt', '*.py', '*.ini'],
+    #     'docs': ['*'],
+    #     # 'pyqueuer': ['static/*/*/*/*', 'templates/*'],
+    # },
     # package_data=find_package_data(
     #     PACKAGE,
     #     only_in_packages=False
     # ),
     include_package_data=True,
+    exclude_package_data={
+        '': ['*.pyc'],
+    },
     platforms='any',
 
     # What does your project relate to?
@@ -80,7 +85,7 @@ setup(
         'Programming Language :: Python :: 3.6',
 
         "Environment :: Web Environment",
-        "License :: OSI Approved :: GPL3 License",
+        "Environment :: Console",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Framework :: Django",
