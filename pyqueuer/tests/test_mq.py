@@ -61,7 +61,7 @@ class KafkaTestCase(TestCase):
     def tearDown(self):
         self.mq.disconnect()
 
-    def test_send_to_queue(self):
+    def test_send_to_topic(self):
         msg = 'my first test message.'
         producer = self.mq.create_producer()
         producer.produce(msg, topic=self.ucf.get(ConfKeys[self.mqtype].topic_out))
