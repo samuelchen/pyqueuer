@@ -13,6 +13,6 @@ before_script:
   # no for now
 script:
   # init db (to avoid migration error)
-  - python manage.py init -p 123456 -t
+  - python -O manage.py init -p 123456 -t
   # Normal tests
-  - python manage.py test
+  - python -O manage.py test
