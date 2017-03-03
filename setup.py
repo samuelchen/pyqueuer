@@ -17,8 +17,14 @@ REQUIREMENTS = []
 with open('requirements.txt', 'rt') as f:
     for line in f.readlines():
         REQUIREMENTS.append(line)
-with open('README.md', 'rt') as f:
-    LONG_DESC = f.read()
+
+try:
+    from pypandoc import convert
+    read_md = lambda f: convert(f, 'rst')
+except ImportError:
+    print("warning: pypandoc module not found, could not convert Markdown to RST")
+    read_md = lambda f: open(f, 'r').read()
+LONG_DESC = read_md('README.md')
 
 
 setup(
@@ -95,10 +101,10 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    entry_points={
-        'console_scripts': [
-            'handler = pyqueuer.py',
-        ],
-    }
+    # entry_points={
+    #     'console_scripts': [
+    #         'handler = pyqueuer.py',
+    #     ],
+    # }
 )
 
