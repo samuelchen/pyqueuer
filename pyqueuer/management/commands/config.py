@@ -111,7 +111,7 @@ class Command(BaseCommand):
 
             for opt in ucf.all():
                 sb.append('%s=%s' % (opt.name, opt.value))
-            return os.linesep.join(sb)
+            return '\n'.join(sb)
 
         elif conf:
             # set configurations
@@ -132,8 +132,7 @@ class Command(BaseCommand):
             try:
                 with open(config_file, 'wt') as f:
                     for opt in ucf.all():
-                        f.write('%s=%s' % (opt.name, opt.value))
-                        f.write(os.linesep)
+                        f.write('%s=%s\n' % (opt.name, opt.value))
             except (FileNotFoundError, PermissionError, FileExistsError):
                 return '  File is not accessible.'
         else:

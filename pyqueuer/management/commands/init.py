@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # coding: utf-8
 
 """
@@ -11,47 +11,10 @@ from django.core.management.commands import migrate, makemigrations
 from django.contrib.auth.management.commands import createsuperuser
 from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
 from django.conf import settings
 import sys
 import os
-import simplejson as json
-import tempfile
-from ...utils import PropertyDict
-from ...consts import MQTypes, GeneralConfKeys, RabbitConfKeys, KafkaConfKeys
-from ...models import UserConf
 from ...consts import ConfKeys
-
-
-# # Preparation Data
-# #   admin_password: Used to initialize test database. Ignore it in most cases.
-# #   mq_type: Select which MQ to performing tests on. Check MQTypes.
-# #   test_user_config: The configurations for tester. Config it in test.json before test.
-# #   "RabbitMQ/Kafka/...": (generated from MQTypes) Arguments for for test.
-# #                           Will be used in test depends on your "mq_type".
-# prepare_data = PropertyDict((
-#     ("test_user_config", PropertyDict((
-#         (GeneralConfKeys.data_store, os.path.sep.join([tempfile.gettempdir(), 'data_store'])),
-#         (GeneralConfKeys.result_store, os.path.sep.join([tempfile.gettempdir(), 'result_store'])),
-#
-#         (RabbitConfKeys.host, ""),
-#         (RabbitConfKeys.port, 5672),
-#         (RabbitConfKeys.user, ""),
-#         (RabbitConfKeys.password, ""),
-#         (RabbitConfKeys.vhost, ""),
-#         (RabbitConfKeys.queue_in, ""),
-#         (RabbitConfKeys.topic_in, ""),
-#         (RabbitConfKeys.key_in, ""),
-#         (RabbitConfKeys.queue_out, ""),
-#         (RabbitConfKeys.topic_out, ""),
-#         (RabbitConfKeys.key_out, ""),
-#
-#         (KafkaConfKeys.host, ""),
-#         (KafkaConfKeys.port, "9092"),
-#         (KafkaConfKeys.topic_in, ""),
-#         (KafkaConfKeys.topic_out, ""),
-#     ))),
-# ))  # use PropertyDict( tuple ) to keep order.
 
 
 class Command(BaseCommand):

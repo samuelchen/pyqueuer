@@ -454,6 +454,7 @@ def _handle_mq_selection_tabs(request):
                 "queue": form_fields['rabbit_queue'],     # queue
                 "topic": form_fields['rabbit_topic'],     # topic
                 "key": form_fields['rabbit_key'],     # key
+                # TODO: "durable": form_fields['rabbit_exchange_durable'],
             }
         elif form_fields['mq'] == MQTypes.Kafka:
             params = {

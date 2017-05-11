@@ -1,4 +1,4 @@
-"""pyqueuer URL Configuration
+﻿"""pyqueuer URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.9/topics/http/urls/
@@ -17,7 +17,7 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls import url, include
 from django.contrib import admin
-from . import views
+from pyqueuer import views
 
 
 urlpatterns = [
@@ -32,5 +32,5 @@ urlpatterns = [
     url(r'^register/', views.register, name='register'),
 ]
 
-if __debug__ and settings.DEBUG:
+if settings.DEBUG:
     urlpatterns.append(url(r'^test/', views.test))

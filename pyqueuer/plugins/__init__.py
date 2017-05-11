@@ -4,5 +4,5 @@
 """
 plugins folder stores the plugins to override messages.
 
-Created on 12/7/2016
+This is the SAMPLE plugin folder. You need to config your own plugin folder.
 """

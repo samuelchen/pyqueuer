@@ -13,6 +13,7 @@ import importlib
 from yapsy.PluginManager import PluginManager
 from yapsy.PluginFileLocator import PluginFileAnalyzerMathingRegex
 import re
+import os
 from .utils import PropertyDict
 
 re_valid_plugin_name = re.compile(r'^[a-zA-Z0-9_\-]+$')
@@ -186,7 +187,7 @@ class Plugins(object):
     __plugin_mgr = None
     __plugins = PropertyDict()
     __plugin_list = None
-    # __metas = None
+    __plugin_folders = [os.path.join(os.path.dirname(__file__), 'plugins'), ]
 
     __categories = {
         # 'AutoUpdaters': IndividualUpdater,
@@ -195,11 +196,15 @@ class Plugins(object):
     }
 
     @classmethod
+    def plugin_folders(cls):
+        return cls.__plugin_folders
+
+    @classmethod
     def __get_mgr(cls):
         if not cls.__plugin_mgr:
             analyzer = PluginFileAnalyzerMathingRegexWithInfoProperty('file_name_analyzer', r'^.*\.py$')
             mgr = PluginManager(categories_filter=cls.__categories)
-            mgr.setPluginPlaces(["plugins"])
+            mgr.setPluginPlaces(cls.plugin_folders())
             mgr.getPluginLocator().removeAllAnalyzer()
             mgr.getPluginLocator().appendAnalyzer(analyzer)
             mgr.locatePlugins()
@@ -207,33 +212,6 @@ class Plugins(object):
             cls.__plugin_mgr = mgr
 
         return cls.__plugin_mgr
-
-    # @classmethod
-    # def _all(cls, category=None):
-    #     mgr = cls.__get_mgr()
-    #     if category:
-    #         return mgr.getPluginsOfCategory(category)
-    #     else:
-    #         return mgr.getAllPlugins()
-
-    # @classmethod
-    # def all_metas(cls, category=None, refresh=False):
-    #     if refresh or not cls.__metas:
-    #         plugins = {}
-    #         for plugin in cls.all(category=category):
-    #             plugins[plugin.name] = PropertyDict({
-    #                 "name": plugin.name,
-    #                 "author": plugin.author,
-    #                 "version": plugin.version,
-    #                 "description": plugin.description,
-    #                 "plugin_object": plugin.plugin_object,
-    #
-    #                 "checked": False,
-    #                 # "key": plugin.plugin_object.key,
-    #                 # "value": None,
-    #             })
-    #         cls.__metas = OrderedDict(sorted(plugins.items(), key=lambda x: x[0]))
-    #     return cls.__metas
 
     @classmethod
     def __load(cls, category, refresh=False):
@@ -254,26 +232,6 @@ class Plugins(object):
                 })
             cls.__plugins[category] = PropertyDict(sorted(plugins.items(), key=lambda x: x[0]))
         return cls.__plugins[category]
-
-    # @classmethod
-    # def all_in_list(cls, refresh=False):
-    #     if refresh or not cls.__plugin_list:
-    #         plugins = []
-    #         for plugin in cls.__get_mgr().getAllPlugins():
-    #             plugins.append(PropertyDict({
-    #                 "name": plugin.name,
-    #                 "author": plugin.author,
-    #                 "version": plugin.version,
-    #                 "description": plugin.description,
-    #                 "plugin_object": plugin.plugin_object,
-    #
-    #                 "checked": False,
-    #                 # "category": category,
-    #                 # "key": plugin.plugin_object.key,
-    #                 # "value": None,
-    #             }))
-    #         cls.__plugin_list = sorted(plugins, key=lambda x: x.name)
-    #     return cls.__plugin_list
 
     @classmethod
     def all(cls, refresh=False):

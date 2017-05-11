@@ -50,6 +50,9 @@ def space2_(value):
 def key_from_var(obj, *args):
     """
     Obtain values from dict/object with given key variables in template.
+    e.g.
+    If you want to render user.name.first_name in Django template,
+    Use {% key_from_var user name first_name %}
     :param obj:
     :param args:
     :return:

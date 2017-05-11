@@ -1,3 +1,4 @@
+﻿
 """
 Django settings for pyqueuer project.
 
@@ -25,6 +26,7 @@ SECRET_KEY = '4qug1iw-f+^*l6st=^$J8d6#27n#jdely!$td@9^_(sank_qn'
 # SECURITY WARNING: don't run with debug turned on in production!
 # Add "-O" argument to python to make __debug__=False
 DEBUG = True if __debug__ else False
+
 if DEBUG:
     print('DEBUG MODE.')
 
@@ -131,6 +133,8 @@ STATIC_URL = '/static/'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# --------------- added settings ---------------
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 TESTER = 'tester'

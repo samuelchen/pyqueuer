@@ -187,7 +187,7 @@ class RabbitMQConsumer(IConsume):
         key = kwargs['key'] if 'key' in kwargs else None
         callback = kwargs['callback'] if 'callback' in kwargs else lambda x: log.debug('Received message:  %s' % x)
         stop_event = kwargs['stop_event'] if 'stop_event' in kwargs else None
-        # TODO: durable = kwargs['durable'] if 'durable' in kwargs else False
+        durable = kwargs['durable'] if 'durable' in kwargs else False
 
         channel = self.channel
         queue_name = queue
@@ -195,7 +195,7 @@ class RabbitMQConsumer(IConsume):
             channel.queue_declare(queue=queue_name, durable=True)
             log.debug('consuming queue %s' % queue_name)
         else:
-            channel.exchange_declare(exchange=topic, type='topic', durable=True)
+            channel.exchange_declare(exchange=topic, type='topic', durable=durable)
             result = channel.queue_declare(exclusive=True)
             queue_name = result.method.queue
             channel.queue_bind(exchange=topic,
