@@ -61,13 +61,12 @@ class KafkaTestCase(TestCase):
     def tearDown(self):
         self.mq.disconnect()
 
-    def test_send_to_topic(self):
-        msg = 'my first test message.'
-        producer = self.mq.create_producer()
-        if producer:
-            producer.produce(msg, topic=self.ucf.get(ConfKeys[self.mqtype].topic_out))
-            self.mq.create_consumer()
-            self.assertEqual(True, True)
+    # def test_send_to_topic(self):
+    #     msg = 'my first test message.'
+    #     producer = self.mq.create_producer()
+    #     producer.produce(msg, topic=self.ucf.get(ConfKeys[self.mqtype].topic_out))
+    #     self.mq.create_consumer()
+    #     self.assertEqual(True, True)
 
 if __name__ == '__main__':
     unittest.main()
