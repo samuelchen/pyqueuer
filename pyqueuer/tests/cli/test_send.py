@@ -69,8 +69,8 @@ class TestCLISend(TestCase, MQTestMixin):
 
         if MQTypes.RabbitMQ in self.mqtypes:
             self._send_rabbit()
-        if MQTypes.Kafka in self.mqtypes:
-            self._send_kafka()
+        # if MQTypes.Kafka in self.mqtypes:
+        #     self._send_kafka()
 
     def _send_rabbit(self):
         mqtype = MQTypes.RabbitMQ

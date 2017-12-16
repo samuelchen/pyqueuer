@@ -68,8 +68,8 @@ RabbitConfKeys = PropertyDict([
 KafkaConfKeys = PropertyDict([
     ('host', 'kafka_host'),
     ('port', 'kafka_port'),
-    # ('user', 'kafka_user'),
-    # ('password', 'kafka_password'),
+    ('user', 'kafka_user'),
+    ('password', 'kafka_password'),
 
     ('topic_in', 'kafka_default_consuming_topic'),
     ('topic_out', 'kafka_default_producing_topic'),
