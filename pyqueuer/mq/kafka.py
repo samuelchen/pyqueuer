@@ -16,8 +16,8 @@ class KafkaConnection(IConnect):
 
     _host = None
     _port = None
-    # _user = None
-    # _password = None
+    _user = None
+    _password = None
 
     _producer = None
     _consumer = None
@@ -26,8 +26,8 @@ class KafkaConnection(IConnect):
         try:
             self._host = self.config[KafkaConfKeys.host]
             self._port = int(self.config[KafkaConfKeys.port])
-            # self._user = self.config[KafkaConfKeys.user]
-            # self._password = self.config[KafkaConfKeys.password]
+            self._user = self.config[KafkaConfKeys.user]
+            self._password = self.config[KafkaConfKeys.password]
         except KeyError as err:
             log.exception(err)
             raise Exception('You must specify the configurations in dict')
@@ -50,12 +50,18 @@ class KafkaConnection(IConnect):
 
     def create_sender(self):
         """create a kafka-python lib producer"""
-        sender = kafka.KafkaProducer(bootstrap_servers=['%s:%s' % (self._host, self._port)])
+        sender = kafka.KafkaProducer(bootstrap_servers=['%s:%s' % (self._host, self._port)],
+                                     sasl_mechanism='SASL_PLAINTEXT',
+                                     sasl_plain_username=self._user,
+                                     sasl_plain_password=self._password)
         return sender
 
     def create_receiver(self):
         """create a kafka-python lib consumer"""
-        receiver = kafka.KafkaConsumer(bootstrap_servers=['%s:%s' % (self._host, self._port)])
+        receiver = kafka.KafkaConsumer(bootstrap_servers=['%s:%s' % (self._host, self._port)],
+                                       sasl_mechanism='SASL_PLAINTEXT',
+                                       sasl_plain_username=self._user,
+                                       sasl_plain_password=self._password)
         return receiver
 
 
